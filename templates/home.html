@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Obscuri artifices lilii</title>
+</head>
+<body>
+<h1>Obscuri artifices lilii</h1>
+<p>Choose any crafting plan:
+<select name=plan method="GET" action="/">
+    {% for plan in plans %}
+    <option value= "{{plan}}" SELECTED>{{plan}}</option>"
+    {% endfor %}
+</select>
+</p>
+</body>
+</html>
