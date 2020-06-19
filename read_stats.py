@@ -103,11 +103,64 @@ class items():
     def get_item_by_id(self, id):
         return df_items[id]
 
+class crafting_plans():
+    """
+    Methods related to the treatment of the crafting plans
+    """
+
+    plans = None
+
+    def __init__(self):
+        """
+        Initialize the crafting plan array from the files and
+        convert it into an easier-to-use pandas table
+        Returns
+        -------
+        None.
+
+        """
+        j_plans = read_json_file('json/craftplan.json')
+        self.plans = dict()
+        # num = 0
+        for plan,item in j_plans.items():
+            try:
+                stats = item['mpft']
+                stats['plan'] = plan
+                stats['item_type'] = item['item_type']
+                stats['name'] = ""
+
+                if len(self.plans) == 0:
+                    self.plans = pd.DataFrame({k: [v] for k,v in stats.items()})
+                else:
+                    self.plans = self.plans.append({k: v for k,v in stats.items()}, ignore_index=True)
+            except:
+                print('Error on ',plan, ': ', item)
+                pass
+
+    def get_by_id(self, id):
+        try:
+            return self.plans[id]
+        except:
+            print('Plan not found: ', id)
+            return None
+
+
 class resources():
+    """
+    Methods related to  treatment of the ressource stats
+    """
 
     ress = dict()
 
     def __init__(self):
+        """
+        Initialize the ressource info array from the files and
+        convert it into an easier-to-use pandas table
+        Returns
+        -------
+        None.
+
+        """
         j_ress = read_json_file('json/resource_stats.json')
         self.ress = dict()
         # num = 0
@@ -131,6 +184,14 @@ class resources():
 
     def get_all(self):
         return self.ress
+
+    def get_material_properties(self, material, usage):
+        try:
+            usage_mats = self.ress[usage]
+            return usage_mats[usage_mats['material'] == material]
+        except:
+            print('Material not found in usage:', material, usage_mats)
+            return None
 
 # def flatten_dict(d, prefix='__'):
 #     def items():
