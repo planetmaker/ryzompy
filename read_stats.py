@@ -72,7 +72,7 @@ def get_item_property_translation(cryt):
 
 def get_ecosystem_from_number(num):
     values = {
-        0: '',
+        0: 'None',
         1: '',
         2: '',
         3: '',
@@ -96,12 +96,19 @@ class names():
 
 class items():
 
-    def __init__(self):
-        j_items = read_json_file('json/items.json')
-        df_items = pd.DataFrame.from_dict(j_items)
+    j_items = dict()
 
-    def get_item_by_id(self, id):
-        return df_items[id]
+    def __init__(self):
+        self.j_items = read_json_file('json/items.json')
+        # _items = pd.DataFrame.from_dict(j_items)
+
+    def get_by_id(self, id):
+        try:
+            return self.j_items[id]
+        except:
+            return None
+
+
 
 class crafting_plans():
     """
@@ -144,6 +151,15 @@ class crafting_plans():
             print('Plan not found: ', id)
             return None
 
+    def get_all(self):
+        return self.plans
+
+    def get_list(self):
+        l = list()
+        for name,prop in self.plans.items():
+            l.append(name)
+        return l
+
 
 class resources():
     """
@@ -152,7 +168,7 @@ class resources():
 
     ress = dict()
 
-    def __init__(self):
+    def __init__(self, items):
         """
         Initialize the ressource info array from the files and
         convert it into an easier-to-use pandas table
@@ -165,11 +181,16 @@ class resources():
         self.ress = dict()
         # num = 0
         for material,item in j_ress.items():
+            mat_stats = items.get_by_id(material)
+            if mat_stats is None:
+                print('No stats found for material: ', material)
+                continue
             # num += 1
             # if num > 50:
             #     return
             for prop,stats in item['stats'].items():
                 stats['material'] = material
+                stats = {**stats, **mat_stats}
                 if prop in self.ress:
                     self.ress[prop] = self.ress[prop].append({k: v for k,v in stats.items()}, ignore_index=True)
                 else:
@@ -192,13 +213,3 @@ class resources():
         except:
             print('Material not found in usage:', material, usage_mats)
             return None
-
-# def flatten_dict(d, prefix='__'):
-#     def items():
-#         for key, value in d.items():
-#             if isinstance(value, dict):
-#                 for sub_key, sub_value in flatten_dict(value).items():
-#                     yield key + prefix + sub_key, sub_value
-#             else:
-#                 yield key, value
-#         return dict(items())
