@@ -10,13 +10,17 @@ from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
+plan = None
+planning = None
+
 @app.route('/', methods=['POST', 'GET'])
 def main_window():
-    error = None
-    if request.method == 'POST':
-        if request.form['crafting_plan'] == 'ALLES':
-            return
-    return render_template('home.html')
+    plans = ['eins', 'zwei', 'drei', 'vier']
+    plan = None
+    if request.method == 'POST' and 'plan' in request.form:
+        plan = request.form.get("plan")
+
+    return render_template('home.html',  plan=plan, plans=plans)
 
 if __name__ == '__main__':
     app.run(debug=True)
