@@ -108,6 +108,9 @@ class items():
         except:
             return None
 
+    def get_all(self):
+        return self.j_items
+
 
 
 class crafting_plans():
@@ -115,7 +118,7 @@ class crafting_plans():
     Methods related to the treatment of the crafting plans
     """
 
-    plans = None
+    plans = dict()
 
     def __init__(self):
         """
@@ -132,14 +135,10 @@ class crafting_plans():
         for plan,item in j_plans.items():
             try:
                 stats = item['mpft']
-                stats['plan'] = plan
                 stats['item_type'] = item['item_type']
                 stats['name'] = ""
+                self.plans[plan] = stats
 
-                if len(self.plans) == 0:
-                    self.plans = pd.DataFrame({k: [v] for k,v in stats.items()})
-                else:
-                    self.plans = self.plans.append({k: v for k,v in stats.items()}, ignore_index=True)
             except:
                 print('Error on ',plan, ': ', item)
                 pass
