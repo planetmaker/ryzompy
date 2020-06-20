@@ -7,11 +7,19 @@
 <body>
 <h1>Obscuri artifices lilii</h1>
 <p>Choose any crafting plan:
-<select name=plan method="GET" action="/">
-    {% for plan in plans %}
+<!-- <select name="plan" method="GET" action="/">-->
+<!--    <option value="{{plans[0]}}" selected>{{plans[0]}}</option>-->
+<!--    {% for plan in plans %}
     <option value= "{{plan}}" SELECTED>{{plan}}</option>"
     {% endfor %}
 </select>
+<input class="btn" type="submit" name="submit" value="Submit"-->
+    <form method="POST" actions="">
+        Enter something:<input type="text" name="plan">
+        <input type="submit" name="submit" value="Submit">
+    </form>
+<p></p>
+Selected: {% if plan %}{{ plan }}{% endif %}
 </p>
 </body>
 </html>
