@@ -14,6 +14,8 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
+import datetime
+
 
 
 apiurl = 'https://api.bmsite.net/atys/weather?cycles=39&offset=1'
@@ -37,6 +39,7 @@ translation_table = {
 
 data = requests.get(apiurl)
 weather_json = json.loads(data.text)
+rl_time = datetime.datetime.now()
 
 def cycle_to_hour(c):
     """
@@ -71,6 +74,41 @@ def time_of_day(current_hour):
 
     """
     return current_hour - (current_hour // 24) * 24
+
+def time_to_tick_str(t):
+    s = ""
+    # s = str(t.hour) + ':' + str(t.minute) + 'h'
+    s = "{0}:{1:02}h".format(t.hour, t.minute)
+    return s
+
+def get_rl_tick_times(trange):
+
+    def get_next_30(t):
+        newt = t
+        if t.minute < 30:
+            newt = t.replace(minute = 30)
+        else:
+            newt = t.replace(minute = 0, hour=t.hour+1)
+        return newt
+
+    t_ticks = trange
+    dt =t_ticks[1] - t_ticks[0]
+    print(dt)
+    rel_t_ticks = [0,1]
+
+    newt = t_ticks[0]
+    while get_next_30(newt) < trange[1]:
+        newt = get_next_30(newt)
+        print(newt, trange[1])
+        newdt = newt - t_ticks[0]
+        reldt = newdt / dt
+        trange.append(newt)
+        rel_t_ticks.append(reldt)
+
+    return trange, rel_t_ticks
+
+
+
 
 weather = dict()
 current_cycle = int(weather_json['cycle'])
@@ -111,19 +149,44 @@ xticklabels = [time_of_day(x) for x in xticks]
 
 plt.close('all')
 
-fig = plt.figure()
+fig, ax = plt.subplots()
+fig.set_size_inches(12,5)
 plt.grid(True)
-ax = fig.add_subplot(1,1,1)
+
+fig.subplots_adjust(bottom=0.25)
+
 ax.plot(w2['zorai'].index.values, w2['zorai']['value'])
 ax.set_xlabel('Ingame-Zeit')
 ax.set_ylabel('weather %')
 ax.set_title('Wettervorhersage')
 ax.set_xticks(xticks)
 ax.set_yticks(yticks)
-fig.set_size_inches(12,5)
 
 #ax = w2['zorai'].plot(y='value', grid='True', title='Wettervorhersage', yticks=yticks, xticks=xticks, label='Zorai', figsize=(12,5))
 ax.set_xticklabels(xticklabels)
 ax.set_xlim([ingame_time-1, ingame_time+show_duration_ingame])
 ax.axvline(x=ingame_time,ymin=0,ymax=1,color='red')
 
+ax2 = ax.twiny()
+ax2.xaxis.set_ticks_position("bottom")
+ax2.xaxis.set_label_position("bottom")
+
+ax2.spines["bottom"].set_position(("axes", -0.15))
+ax2.set_frame_on(True)
+ax2.patch.set_visible(False)
+for sp in ax2.spines.values():
+    sp.set_visible(False)
+ax2.spines["bottom"].set_visible(True)
+t_min = rl_time - datetime.timedelta(minutes=3)
+t_max = rl_time + datetime.timedelta(minutes=3*show_duration_ingame)
+rl_times = [t_min, t_max]
+t_tick_times, rel_tick_times = get_rl_tick_times(rl_times)
+ax2.set_xticks(rel_tick_times)
+t_tick_strs = [time_to_tick_str(t) for t in rl_times]
+ax2.set_xticklabels(t_tick_strs)
+#ax2.set_xticklabels(xticklabels)
+ax2.set_xlabel("Real time")
+
+plt.show()
+
+print(rl_time)
