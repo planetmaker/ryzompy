@@ -13,10 +13,13 @@ import json
 import pandas as pd
 
 import matplotlib.pyplot as plt
-plt.close('all')
+
 
 
 apiurl = 'https://api.bmsite.net/atys/weather?cycles=39&offset=1'
+show_duration_ingame = 36
+
+
 
 translation_table = {
     'tryker':        'Seenland',
@@ -106,6 +109,8 @@ yticks = [0, 16.7, 33.4, 50.0, 66.6, 83.4, 100]
 xticks = w2['zorai'].index.values
 xticklabels = [time_of_day(x) for x in xticks]
 
+plt.close('all')
+
 fig = plt.figure()
 plt.grid(True)
 ax = fig.add_subplot(1,1,1)
@@ -119,6 +124,6 @@ fig.set_size_inches(12,5)
 
 #ax = w2['zorai'].plot(y='value', grid='True', title='Wettervorhersage', yticks=yticks, xticks=xticks, label='Zorai', figsize=(12,5))
 ax.set_xticklabels(xticklabels)
-ax.set_xlim([ingame_time-1, ingame_time+36])
+ax.set_xlim([ingame_time-1, ingame_time+show_duration_ingame])
 ax.axvline(x=ingame_time,ymin=0,ymax=1,color='red')
 
