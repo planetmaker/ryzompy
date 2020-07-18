@@ -119,7 +119,7 @@ for item,value in translation_table.items():
     weather[item] = tmp.astype({'value': 'float64','cycle':'int64'})
 
 yticks = [0, 0.167, 0.334, 0.500, 0.666, 0.834]
-weather['zorai']['hour'] = cycle_to_hour(weather['zorai']['cycle'])
+# weather['zorai']['hour'] = cycle_to_hour(weather['zorai']['cycle'])
 
 # ax = weather['zorai'].plot(x='hour', y='value', grid='True', title='Wettervorhersage', yticks=yticks)
 # ax.axvline(x=ingame_time/3,ymin=0,ymax=1)
@@ -131,17 +131,19 @@ weather['zorai']['hour'] = cycle_to_hour(weather['zorai']['cycle'])
 print("Cycle, hour, local hour: ",current_cycle, ingame_time, time_of_day(ingame_time))
 
 
-iw = weather['zorai']
-iw.set_index('hour', inplace=True)
-iw2 = iw
-for index, row in iw.iterrows():
-    iw2.loc[index+1] = row
-    iw2.loc[index+2] = row
-iw2.sort_index(inplace=True)
-
 w2 = dict()
-w2['zorai'] = iw2
-w2['zorai']['value'] = 100 * w2['zorai']['value']
+for location in translation_table:
+    weather[location]['hour'] = cycle_to_hour(weather[location]['cycle'])
+    iw = weather[location]
+    iw.set_index('hour', inplace=True)
+    iw2 = iw
+    for index, row in iw.iterrows():
+        iw2.loc[index+1] = row
+        iw2.loc[index+2] = row
+    iw2.sort_index(inplace=True)
+
+    w2[location] = iw2
+    w2[location]['value'] = 100 * w2[location]['value']
 
 yticks = [0, 16.7, 33.4, 50.0, 66.6, 83.4, 100]
 xticks = w2['zorai'].index.values
@@ -155,7 +157,8 @@ plt.grid(True)
 
 fig.subplots_adjust(bottom=0.25)
 
-ax.plot(w2['zorai'].index.values, w2['zorai']['value'])
+for item,value in translation_table.items():
+    ax.plot(w2[item].index.values, w2[item]['value'], label=value)
 ax.set_xlabel('Ingame-Zeit')
 ax.set_ylabel('weather %')
 ax.set_title('Wettervorhersage')
@@ -166,6 +169,8 @@ ax.set_yticks(yticks)
 ax.set_xticklabels(xticklabels)
 ax.set_xlim([ingame_time-1, ingame_time+show_duration_ingame])
 ax.axvline(x=ingame_time,ymin=0,ymax=1,color='red')
+
+plt.legend()
 
 ax2 = ax.twiny()
 ax2.xaxis.set_ticks_position("bottom")
@@ -180,7 +185,9 @@ ax2.spines["bottom"].set_visible(True)
 t_min = rl_time - datetime.timedelta(minutes=3)
 t_max = rl_time + datetime.timedelta(minutes=3*show_duration_ingame)
 rl_times = [t_min, t_max]
+# print("time ranges: ",rl_times)
 t_tick_times, rel_tick_times = get_rl_tick_times(rl_times)
+# print(t_tick_times, rel_tick_times)
 ax2.set_xticks(rel_tick_times)
 t_tick_strs = [time_to_tick_str(t) for t in rl_times]
 ax2.set_xticklabels(t_tick_strs)
