@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 plt.close('all')
 
 
-apiurl = 'https://api.bmsite.net/atys/weather?cycles=8&offset=1'
+apiurl = 'https://api.bmsite.net/atys/weather?cycles=39&offset=1'
 
 translation_table = {
     'tryker':        'Seenland',
@@ -104,7 +104,21 @@ w2['zorai']['value'] = 100 * w2['zorai']['value']
 
 yticks = [0, 16.7, 33.4, 50.0, 66.6, 83.4, 100]
 xticks = w2['zorai'].index.values
+xticklabels = [time_of_day(x) for x in xticks]
 
-ax = w2['zorai'].plot(y='value', grid='True', title='Wettervorhersage', yticks=yticks, xticks=xticks, label='Zorai', figsize=(12,5))
+fig = plt.figure()
+plt.grid(True)
+ax = fig.add_subplot(1,1,1)
+ax.plot(w2['zorai'].index.values, w2['zorai']['value'])
+ax.set_xlabel('Ingame-Zeit')
+ax.set_ylabel('weather %')
+ax.set_title('Wettervorhersage')
+ax.set_xticks(xticks)
+ax.set_yticks(yticks)
+fig.set_size_inches(12,5)
+
+#ax = w2['zorai'].plot(y='value', grid='True', title='Wettervorhersage', yticks=yticks, xticks=xticks, label='Zorai', figsize=(12,5))
+ax.set_xticklabels(xticklabels)
+ax.set_xlim([ingame_time-1, ingame_time+36])
 ax.axvline(x=ingame_time,ymin=0,ymax=1,color='red')
 
