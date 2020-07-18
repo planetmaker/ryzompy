@@ -106,5 +106,5 @@ yticks = [0, 16.7, 33.4, 50.0, 66.6, 83.4, 100]
 xticks = w2['zorai'].index.values
 
 ax = w2['zorai'].plot(y='value', grid='True', title='Wettervorhersage', yticks=yticks, xticks=xticks, label='Zorai', figsize=(12,5))
-ax.axvline(x=ingame_time,ymin=0,ymax=1)
+ax.axvline(x=ingame_time,ymin=0,ymax=1,color='red')
 
