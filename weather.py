@@ -71,7 +71,7 @@ def time_of_day(current_hour):
         time of day as floating point value of the hour
 
     """
-    return current_hour - (current_hour // 24) * 24
+    return current_hour % 24
 
 def time_to_tick_str(t):
     s = ""
