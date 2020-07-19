@@ -102,7 +102,7 @@ def get_rl_tick_times(trange):
     newt = t_ticks[0]
     while get_next_30(newt) < trange[1]:
         newt = get_next_30(newt)
-        print(newt, trange[1])
+        # print(newt, trange[1])
         newdt = newt - t_ticks[0]
         reldt = newdt / dt
         trange.append(newt)
@@ -155,6 +155,7 @@ first = True
 while True:
     rl_time = datetime.datetime.now()
     dt = (rl_time - old_rl_time).total_seconds()
+    print(rl_time, old_rl_time, dt)
     if dt > api_frequency or first:
         data = requests.get(apiurl)
         weather_json = json.loads(data.text)
@@ -162,8 +163,10 @@ while True:
         weather = dict()
         current_cycle = int(weather_json['cycle'])
         ingame_time  = float(weather_json['hour'])
+        last_ingame_time = ingame_time
+        old_rl_time = rl_time
     else:
-        ingame_time = ingame_time + dt/180 #/3600 * 3600/180
+        ingame_time = last_ingame_time + dt/180 #/3600 * 3600/180
 
     for item,value in translation_table.items():
         tmp = pd.DataFrame.from_records(weather_json['continents'][item]).T
