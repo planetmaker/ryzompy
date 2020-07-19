@@ -150,6 +150,7 @@ for sp in ax2.spines.values():
 ax2.spines["bottom"].set_visible(True)
 
 old_rl_time=datetime.datetime.now()
+nightdict = dict()
 first = True
 while True:
     rl_time = datetime.datetime.now()
@@ -211,7 +212,9 @@ while True:
 
     nights = get_nights(ingame_time, show_duration_ingame)
     for night in nights:
-        ax.axvspan(night[0],night[1], alpha=0.1, color='grey')
+        if night[0] not in nightdict:
+            ax.axvspan(night[0],night[1], alpha=0.15, color='grey')
+            nightdict[night[0]] = night
 
     ax2.set_xlim(0,1)
     t_min = rl_time - datetime.timedelta(minutes=3)
