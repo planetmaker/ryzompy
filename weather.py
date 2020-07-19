@@ -110,10 +110,23 @@ def get_rl_tick_times(trange):
 
     return trange, rel_t_ticks
 
+def is_night(hour):
+    h = hour % 24
+    return h >= 22 or h <3
 
+def is_dusk(hour):
+    return (hour % 24) == 22
 
-
-
+def get_nights(start_hour, duration):
+    local_hour = time_of_day(start_hour)
+    dusk = 22 - local_hour + start_hour
+    if local_hour < 4:
+        dusk -= 24
+    nighttime = [(dusk, dusk + 5)]
+    while dusk < start_hour + duration:
+        dusk += 24
+        nighttime.append((dusk, dusk+5))
+    return nighttime
 
 
 plt.close('all')
@@ -180,9 +193,6 @@ while True:
     xticks = w2['zorai'].index.values
     xticklabels = [time_of_day(x) for x in xticks]
 
-
-
-
     for item,value in translation_table.items():
         ax.plot(w2[item].index.values, w2[item]['value'], label=value)
     ax.set_xlabel('Ingame-Zeit')
@@ -197,9 +207,11 @@ while True:
     ax.set_xticklabels(xticklabels)
     ax.set_xlim([ingame_time-1, ingame_time+show_duration_ingame])
 
-
     vertical_line_now.set_data([ingame_time, ingame_time], [0,1])
 
+    nights = get_nights(ingame_time, show_duration_ingame)
+    for night in nights:
+        ax.axvspan(night[0],night[1], alpha=0.1, color='grey')
 
     ax2.set_xlim(0,1)
     t_min = rl_time - datetime.timedelta(minutes=3)
