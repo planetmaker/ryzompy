@@ -136,15 +136,20 @@ for sp in ax2.spines.values():
     sp.set_visible(False)
 ax2.spines["bottom"].set_visible(True)
 
+old_rl_time=datetime.datetime.now()
 first = True
 while True:
     rl_time = datetime.datetime.now()
-    data = requests.get(apiurl)
-    weather_json = json.loads(data.text)
+    dt = (rl_time - old_rl_time).total_seconds()
+    if dt > api_frequency or first:
+        data = requests.get(apiurl)
+        weather_json = json.loads(data.text)
 
-    weather = dict()
-    current_cycle = int(weather_json['cycle'])
-    ingame_time  = float(weather_json['hour'])
+        weather = dict()
+        current_cycle = int(weather_json['cycle'])
+        ingame_time  = float(weather_json['hour'])
+    else:
+        ingame_time = ingame_time + dt/180 #/3600 * 3600/180
 
     for item,value in translation_table.items():
         tmp = pd.DataFrame.from_records(weather_json['continents'][item]).T
@@ -187,7 +192,6 @@ while True:
     ax.set_yticks(yticks)
     # hack in order to not amend the legend anew each time
     if first:
-        first = False
         ax.legend(loc='upper right')
 
     ax.set_xticklabels(xticklabels)
@@ -209,4 +213,6 @@ while True:
     ax2.set_xticklabels(t_tick_strs)
     ax2.set_xlabel("Real time")
 
+    first = False
     plt.pause(update_frequency)
+
