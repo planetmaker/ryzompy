@@ -26,15 +26,15 @@ api_frequency    = 60 # Sekunden
 
 
 translation_table = {
-    'tryker':        'Seenland',
-    'matis':         'Wald',
-    'fyros':         'Wüste',
-    'zorai':         'Dschungel',
+    'tryker':        {'name': 'Seenland', 'colour': 'blue'},
+    'matis':         {'name': 'Wald',     'colour': 'green'},
+    'fyros':         {'name': 'Wüste',    'colour': 'orange'},
+    'zorai':         {'name': 'Dschungel','colour': 'fuchsia'},
 #    'nexus':         'Nexus',
-    'sources':       'Verbotene Quelle',
-    'bagne':         'Abgrund von Ichor',
-    'terre':         'Niemandsland',
-    'route_gouffre': 'Länder von Umbra',
+    'sources':       {'name':'Verbotene Quelle', 'colour': 'lightsteelblue'},
+    'bagne':         {'name':'Abgrund von Ichor','colour': 'greenyellow'},
+    'terre':         {'name':'Niemandsland',     'colour': 'sandybrown'},
+    'route_gouffre': {'name':'Länder von Umbra', 'colour': 'lightpink'},
 #    'newbieland':    'Silan',
 #    'kitiniere':     'Kitin-Nest'
     }
@@ -194,7 +194,7 @@ while True:
     xticklabels = [time_of_day(x) for x in xticks]
 
     for item,value in translation_table.items():
-        ax.plot(w2[item].index.values, w2[item]['value'], label=value)
+        ax.plot(w2[item].index.values, w2[item]['value'], label=value['name'], color=value['colour'])
     ax.set_xlabel('Ingame-Zeit')
     ax.set_ylabel('weather %')
     ax.set_title('Wettervorhersage')
