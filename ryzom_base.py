@@ -44,18 +44,25 @@ class API_error(Enum):
 class Colour(Enum):
     undefined = -1
     red       = 0
-    orange    = 1
-    green     = 2
-    turquoise = 3
-    blue      = 4
-    purple    = 5
-    white     = 6
-    black     = 7
+    beige     = 1
+    orange    = 2
+    green     = 3
+    turquoise = 4
+    blue      = 5
+    purple    = 6
+    white     = 7
+    black     = 8
 
 class Ecosystem(Enum):
     undefined = 0
-    wood      = 1
-    desert    = 2
+    desert    = 1
+    wood      = 2
     lake      = 3
     jungle    = 4
     roots     = 6
+
+class Race(Enum):
+    Tryker    = 0
+    Matis     = 1
+    Fyros     = 2
+    Zorai     = 3
