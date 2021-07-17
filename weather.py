@@ -9,6 +9,7 @@ via its API
 """
 
 import requests
+from argparse import ArgumentParser
 import json
 import pandas as pd
 
@@ -17,13 +18,26 @@ import matplotlib.pyplot as plt
 import datetime
 
 
-
 apiurl = 'https://api.bmsite.net/atys/weather?cycles=39&offset=1'
 show_duration_ingame = 36
-update_frequency = 1  # Sekunden
+update_frequency = 30  # Sekunden
 api_frequency    = 60 # Sekunden
+debug_level = 0
 
+parser = ArgumentParser(description="Weather forecast for Ryzom")
+parser.add_argument("-u", "--update", dest="update_frequency",
+                    default=30, type=int,
+                    help="update frequency for display")
+parser.add_argument("-D", "--debug", dest="debug_level",
+                    default=0, type=int,
+                    help="debugging level (default = 0)")
+args = parser.parse_args()
 
+update_frequency = args.update_frequency
+
+print(args)
+print(args.debug_level)
+print(args.update_frequency)
 
 translation_table = {
     'tryker':        {'name': 'Seenland', 'colour': 'blue'},
@@ -81,6 +95,7 @@ def time_to_tick_str(t):
 
 def get_rl_tick_times(trange):
 
+    global args
     def get_next_30(t):
         newt = t
         if t.minute < 30:
@@ -96,7 +111,8 @@ def get_rl_tick_times(trange):
 
     t_ticks = trange
     dt =t_ticks[1] - t_ticks[0]
-    print(dt)
+    if args.debug_level > 0:
+        print(dt)
     rel_t_ticks = [0,1]
 
     newt = t_ticks[0]
@@ -128,6 +144,11 @@ def get_nights(start_hour, duration):
         nighttime.append((dusk, dusk+5))
     return nighttime
 
+def on_close(event):
+    print("Terminating Ryzom weather forecast")
+    quit()
+
+
 
 plt.close('all')
 fig, ax = plt.subplots()
@@ -152,10 +173,14 @@ ax2.spines["bottom"].set_visible(True)
 old_rl_time=datetime.datetime.now()
 nightdict = dict()
 first = True
+
+fig.canvas.mpl_connect('close_event', on_close)
+
 while True:
     rl_time = datetime.datetime.now()
     dt = (rl_time - old_rl_time).total_seconds()
-    print(rl_time, old_rl_time, dt)
+    if args.debug_level > 0:
+        print(rl_time, old_rl_time, dt)
     if dt > api_frequency or first:
         data = requests.get(apiurl)
         weather_json = json.loads(data.text)
@@ -176,7 +201,8 @@ while True:
     # There are added two flat hours, then an hour of change to the new value
     # The length of 8 weather cycles corresponds to the display on the website
     # 58400 weather cycles per year
-    print("Cycle, hour, local hour: ",current_cycle, ingame_time, time_of_day(ingame_time))
+    if (args.debug_level > 0):
+        print("Cycle, hour, local hour: ",current_cycle, ingame_time, time_of_day(ingame_time))
 
 
     w2 = dict()
