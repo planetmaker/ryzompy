@@ -35,9 +35,9 @@ args = parser.parse_args()
 
 update_frequency = args.update_frequency
 
-print(args)
-print(args.debug_level)
-print(args.update_frequency)
+# print(args)
+# print(args.debug_level)
+# print(args.update_frequency)
 
 translation_table = {
     'tryker':        {'name': 'Seenland', 'colour': 'blue'},
