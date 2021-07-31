@@ -17,6 +17,12 @@ import matplotlib.pyplot as plt
 
 import datetime
 
+# # Prepare for website: https://towardsdatascience.com/how-to-easily-show-your-matplotlib-plots-and-pandas-dataframes-dynamically-on-your-website-a9613eff7ae3
+# from flask import Flask, render_template, send_file, make_response, url_for, Response
+
+# import io
+
+# app = Flask(__name__)
 
 apiurl = 'https://api.bmsite.net/atys/weather?cycles=39&offset=1'
 show_duration_ingame = 36
@@ -101,12 +107,15 @@ def get_rl_tick_times(trange):
         if t.minute < 30:
             newt = t.replace(minute = 30)
         else:
-            h = t.hour+1
-            d = t.day
-            if h >= 24:
-                d = d + 1
-                h = 0
-            newt = t.replace(minute = 0, hour=h, day=d)
+            # h = t.hour+1
+            # d = t.day
+            # if h >= 24:
+            #     d = d + 1
+            #     h = 0
+            # newt = t.replace(minute = 0, hour=h, day=d)
+
+            newt = t.replace(minute = 0, hour=t.hour, day=t.day)
+            newt = newt + datetime.timedelta(hours=1)
         return newt
 
     t_ticks = trange
@@ -148,115 +157,139 @@ def on_close(event):
     print("Terminating Ryzom weather forecast")
     quit()
 
+# #Pandas Page
+# @app.route('/pandas', methods=("POST", "GET"))
+# def GK():
+#     return render_template('pandas.html',
+#                            PageTitle = "Pandas",
+#                            table=[GK_roi.to_html(classes='data', index = False)], titles= GK_roi.columns.values)
 
 
-plt.close('all')
-fig, ax = plt.subplots()
-plt.grid(True)
-plt.legend(loc='upper right')
-fig.set_size_inches(12,5)
-fig.subplots_adjust(bottom=0.25)
+# #Matplotlib page
+# @app.route('/matplot', methods=("POST", "GET"))
+# def mpl():
+#     return render_template('matplot.html',
+#                            PageTitle = "Matplotlib")
+# @app.route('/')
+# @app.route('/weather.png')
+# def plot_png():
+#     fig=weather_plot()
+#     output = io.BytesID()
+#     FigureCanvas(fig).print_png(output)
+#     return Response(output.getvalue(), mimetype='image/png')
 
-vertical_line_now = ax.axvline(x=0, color='red')
+def weather_plot():
+    plt.close('all')
+    fig, ax = plt.subplots()
+    plt.grid(True)
+    plt.legend(loc='upper right')
+    fig.set_size_inches(12,5)
+    fig.subplots_adjust(bottom=0.25)
 
-ax2 = ax.twiny()
-ax2.xaxis.set_ticks_position("bottom")
-ax2.xaxis.set_label_position("bottom")
+    vertical_line_now = ax.axvline(x=0, color='red')
 
-ax2.spines["bottom"].set_position(("axes", -0.15))
-ax2.set_frame_on(True)
-ax2.patch.set_visible(False)
-for sp in ax2.spines.values():
-    sp.set_visible(False)
-ax2.spines["bottom"].set_visible(True)
+    ax2 = ax.twiny()
+    ax2.xaxis.set_ticks_position("bottom")
+    ax2.xaxis.set_label_position("bottom")
 
-old_rl_time=datetime.datetime.now()
-nightdict = dict()
-first = True
+    ax2.spines["bottom"].set_position(("axes", -0.15))
+    ax2.set_frame_on(True)
+    ax2.patch.set_visible(False)
+    for sp in ax2.spines.values():
+        sp.set_visible(False)
+    ax2.spines["bottom"].set_visible(True)
 
-fig.canvas.mpl_connect('close_event', on_close)
+    old_rl_time=datetime.datetime.now()
+    nightdict = dict()
+    first = True
 
-while True:
-    rl_time = datetime.datetime.now()
-    dt = (rl_time - old_rl_time).total_seconds()
-    if args.debug_level > 0:
-        print(rl_time, old_rl_time, dt)
-    if dt > api_frequency or first:
-        data = requests.get(apiurl)
-        weather_json = json.loads(data.text)
+    fig.canvas.mpl_connect('close_event', on_close)
 
-        weather = dict()
-        current_cycle = int(weather_json['cycle'])
-        ingame_time  = float(weather_json['hour'])
-        last_ingame_time = ingame_time
-        old_rl_time = rl_time
-    else:
-        ingame_time = last_ingame_time + dt/180 #/3600 * 3600/180
+    while True:
+        rl_time = datetime.datetime.now()
+        dt = (rl_time - old_rl_time).total_seconds()
+        if args.debug_level > 0:
+            print(rl_time, old_rl_time, dt)
+        if dt > api_frequency or first:
+            data = requests.get(apiurl)
+            weather_json = json.loads(data.text)
 
-    for item,value in translation_table.items():
-        tmp = pd.DataFrame.from_records(weather_json['continents'][item]).T
-        weather[item] = tmp.astype({'value': 'float64','cycle':'int64'})
+            weather = dict()
+            current_cycle = int(weather_json['cycle'])
+            ingame_time  = float(weather_json['hour'])
+            last_ingame_time = ingame_time
+            old_rl_time = rl_time
+        else:
+            ingame_time = last_ingame_time + dt/180 #/3600 * 3600/180
 
-    # Comparison to the ballistic mythics website:
-    # There are added two flat hours, then an hour of change to the new value
-    # The length of 8 weather cycles corresponds to the display on the website
-    # 58400 weather cycles per year
-    if (args.debug_level > 0):
-        print("Cycle, hour, local hour: ",current_cycle, ingame_time, time_of_day(ingame_time))
+        for item,value in translation_table.items():
+            tmp = pd.DataFrame.from_records(weather_json['continents'][item]).T
+            weather[item] = tmp.astype({'value': 'float64','cycle':'int64'})
+
+        # Comparison to the ballistic mythics website:
+        # There are added two flat hours, then an hour of change to the new value
+        # The length of 8 weather cycles corresponds to the display on the website
+        # 58400 weather cycles per year
+        if (args.debug_level > 0):
+            print("Cycle, hour, local hour: ",current_cycle, ingame_time, time_of_day(ingame_time))
 
 
-    w2 = dict()
-    for location in translation_table:
-        weather[location]['hour'] = cycle_to_hour(weather[location]['cycle'])
-        iw = weather[location]
-        iw.set_index('hour', inplace=True)
-        iw2 = iw
-        for index, row in iw.iterrows():
-            iw2.loc[index+1] = row
-            iw2.loc[index+2] = row
-        iw2.sort_index(inplace=True)
+        w2 = dict()
+        for location in translation_table:
+            weather[location]['hour'] = cycle_to_hour(weather[location]['cycle'])
+            iw = weather[location]
+            iw.set_index('hour', inplace=True)
+            iw2 = iw
+            for index, row in iw.iterrows():
+                iw2.loc[index+1] = row
+                iw2.loc[index+2] = row
+            iw2.sort_index(inplace=True)
 
-        w2[location] = iw2
-        w2[location]['value'] = 100 * w2[location]['value']
+            w2[location] = iw2
+            w2[location]['value'] = 100 * w2[location]['value']
 
-    yticks = [0, 16.7, 33.4, 50.0, 66.6, 83.4, 100]
-    xticks = w2['zorai'].index.values
-    xticklabels = [time_of_day(x) for x in xticks]
+        yticks = [0, 16.7, 33.4, 50.0, 66.6, 83.4, 100]
+        xticks = w2['zorai'].index.values
+        xticklabels = [time_of_day(x) for x in xticks]
 
-    for item,value in translation_table.items():
-        ax.plot(w2[item].index.values, w2[item]['value'], label=value['name'], color=value['colour'])
-    ax.set_xlabel('Ingame-Zeit')
-    ax.set_ylabel('weather %')
-    ax.set_title('Wettervorhersage')
-    ax.set_xticks(xticks)
-    ax.set_yticks(yticks)
-    # hack in order to not amend the legend anew each time
-    if first:
-        ax.legend(loc='upper right')
+        for item,value in translation_table.items():
+            ax.plot(w2[item].index.values, w2[item]['value'], label=value['name'], color=value['colour'])
+        ax.set_xlabel('Ingame-Zeit')
+        ax.set_ylabel('weather %')
+        ax.set_title('Wettervorhersage')
+        ax.set_xticks(xticks)
+        ax.set_yticks(yticks)
+        # hack in order to not amend the legend anew each time
+        if first:
+            ax.legend(loc='upper right')
 
-    ax.set_xticklabels(xticklabels)
-    ax.set_xlim([ingame_time-1, ingame_time+show_duration_ingame])
+        ax.set_xticklabels(xticklabels)
+        ax.set_xlim([ingame_time-1, ingame_time+show_duration_ingame])
 
-    vertical_line_now.set_data([ingame_time, ingame_time], [0,1])
+        vertical_line_now.set_data([ingame_time, ingame_time], [0,1])
 
-    nights = get_nights(ingame_time, show_duration_ingame)
-    for night in nights:
-        if night[0] not in nightdict:
-            ax.axvspan(night[0],night[1], alpha=0.15, color='grey')
-            nightdict[night[0]] = night
+        nights = get_nights(ingame_time, show_duration_ingame)
+        for night in nights:
+            if night[0] not in nightdict:
+                ax.axvspan(night[0],night[1], alpha=0.15, color='grey')
+                nightdict[night[0]] = night
 
-    ax2.set_xlim(0,1)
-    t_min = rl_time - datetime.timedelta(minutes=3)
-    t_max = rl_time + datetime.timedelta(minutes=3*show_duration_ingame)
-    rl_times = [t_min, t_max]
-    # print("time ranges: ",rl_times)
-    t_tick_times, rel_tick_times = get_rl_tick_times(rl_times)
-    # print(t_tick_times, rel_tick_times)
-    ax2.set_xticks(rel_tick_times)
-    t_tick_strs = [time_to_tick_str(t) for t in rl_times]
-    ax2.set_xticklabels(t_tick_strs)
-    ax2.set_xlabel("Real time")
+        ax2.set_xlim(0,1)
+        t_min = rl_time - datetime.timedelta(minutes=3)
+        t_max = rl_time + datetime.timedelta(minutes=3*show_duration_ingame)
+        rl_times = [t_min, t_max]
+        # print("time ranges: ",rl_times)
+        t_tick_times, rel_tick_times = get_rl_tick_times(rl_times)
+        # print(t_tick_times, rel_tick_times)
+        ax2.set_xticks(rel_tick_times)
+        t_tick_strs = [time_to_tick_str(t) for t in rl_times]
+        ax2.set_xticklabels(t_tick_strs)
+        ax2.set_xlabel("Real time")
 
-    first = False
-    plt.pause(update_frequency)
+        first = False
+        plt.pause(update_frequency)
 
+weather_plot()
+
+# if __name__ == '__main__':
+#     app.run(debug = True)
