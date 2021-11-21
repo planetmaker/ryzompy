@@ -114,6 +114,7 @@ class Character:
             self.data24h["days"]          # array of number of days stacked for status
         """
         self.fold("time24h", seconds_per_day, self.data24h)
+        self.data["time24hf"] = self.data["time24h"] / 3600
         self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
 
     def fold_weekly(self):
@@ -131,6 +132,7 @@ class Character:
             self.data7d["days"]          # array of number of days stacked for status
         """
         self.fold("time7d", seconds_per_week, self.data7d)
+        self.data["time7df"] = self.data["time7d"] / 3600 / 24
         self.data["strg_time"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
 
 
@@ -151,6 +153,70 @@ class Character:
         ax.step(self.rawlog["time"], self.rawlog["status"], linewidth=2.5)
         # ax.set(xlim=(config["timeframe"]["minimum"], config["timeframe"]["maximum"]))
         plt.show()
+
+    def plot_folded(self, col_time_float, n_bins, col_data, **kwargs):
+        """
+
+        Parameters
+        ----------
+        col_time_float : str
+            column name for the folded time (floating numbers).
+        n_bins : int
+            Number bins to use in the histogram
+        col_data : TYPE
+            Data columns to show foleded over the period.
+
+        Returns
+        -------
+        None.
+
+        """
+        try:
+            self.data.hist(col_time_float, bins=n_bins, weights=self.data[col_data])
+        except KeyError as e:
+            print("Columns not found: ")
+            print(e)
+            return
+
+        try:
+            if 'title' in kwargs:
+                plt.title(kwargs['title'])
+            if 'xtitle' in kwargs:
+                plt.xtitle(kwargs['xtitle'])
+            if 'ytitle' in kwargs:
+                plt.ytitle(kwargs['ytitle'])
+        except (KeyError, NameError):
+            print("Invalid argument")
+            return
+
+
+    def plot_24h(self):
+        """
+        Plot the average online status over a 24h period
+
+        Returns
+        -------
+        None.
+
+        """
+        if not "time24hf" in self.data:
+            self.fold_24hours()
+
+        self.plot_folded("time24hf", 24*60, "status") # 1-minute bins
+
+    def plot_week(self):
+        """
+        Plot the average online status folder over weekly
+
+        Returns
+        -------
+        None.
+
+        """
+        if not "time7df" in self.data:
+            self.fold_weekly()
+
+        self.plot_folded("time7df", 7*8, "status") # 3-hour bins
 
 
 
