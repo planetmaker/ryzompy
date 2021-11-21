@@ -9,6 +9,9 @@ Created on Sat Nov 20 10:56:43 2021
 import pandas as pd
 import numpy as np
 import scipy as sp
+import matplotlib.pyplot as plt
+
+from datetime import datetime
 
 global config
 from social_config import config
@@ -45,24 +48,27 @@ Similarily you can define a list of names which you know are unique players:
 known_distinct = ["name_a1", "name_c", "name_d"]
 """
 
-class Character():
-    name = ""
-    rawlog = {
-        "time": [],
-        "status": [],
-        }
+class Character:
     """
     Contains the data about one character and low-level access
     """
 
     def __init__(self, name, time, status):
         self.name = name
+        self.rawlog = dict()
         self.rawlog["status"] = [status]
         self.rawlog["time"] = [time]
 
     def append_entry(self, time, status):
         self.rawlog["status"].append(status)
         self.rawlog["time"].append(time)
+
+    def plot_online(self, tmin=0, tmax=config["timeframe"]["maximum"]):
+        fig, ax = plt.subplots()
+        ax.step(self.rawlog["time"], self.rawlog["status"], linewidth=2.5)
+        # ax.set(xlim=(config["timeframe"]["minimum"], config["timeframe"]["maximum"]))
+        plt.show()
+
 
 
 def read_status(filename):
@@ -117,10 +123,10 @@ def convert_raw(raw):
         status = status_to_numeric(raw["status"][index])
         time = raw["created_at"][index]
 
-        if name not in characters:
-            characters[name] = Character(name, time, status)
-        else:
+        if name in characters:
             characters[name].append_entry(time, status)
+        else:
+            characters[name] = Character(name, time, status)
 
     return characters
 
