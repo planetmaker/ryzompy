@@ -11,7 +11,7 @@ import numpy as np
 
 global config
 from social_config import config
-from social_character import Character
+from character import Character
 
 """
 The logfile 'example.log' is expected to be a csv file in the following format:

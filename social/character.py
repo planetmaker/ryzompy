@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from datetime import datetime
 
-from social_global import seconds_per_day, seconds_per_week
+from social_globals import seconds_per_day, seconds_per_week
 from social_config import config
 
 class Character:
