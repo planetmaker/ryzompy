@@ -282,8 +282,21 @@ def convert_raw(raw):
 
 if __name__ == '__main__':
     global personal_log # make available to cmd for individual analysis
+    print("Using config:")
+    print(config)
+
     raw_status = read_status(config["status_filename"])
     pl = convert_raw(raw_status)
+
+    if "plot_24hours" in config:
+        for name in config["plot_24hours"]:
+            print("Plotting " + name)
+            try:
+                pl[name].fold_24hours()
+                pl[name].plot_folded("time24hf", 24*60, "status", title=name)
+            except KeyError:
+                print("Character not found!")
+
 
 
 
