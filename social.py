@@ -10,21 +10,40 @@ import pandas as pd
 import numpy as np
 import scipy as sp
 
-# The logfile is expected to be a csv file in the following format:
-# "id","name","status","created_at"
-# "1","name1","offline","1632158674"
-# "2", "name2","online","1632158679"
-# ...
-
 global config
-config = {
+from social_config import config
+
+"""
+The logfile 'example.log' is expected to be a csv file in the following format:
+"id","name","status","created_at"
+"1","name1","offline","1632158674"
+"2", "name2","online","1632158679"
+...
+
+
+The config itself specifies a few basic properties:
+
+config =  = {
     "status_filename": 'example.log',
     "concurrency_jitter": 5,
     "status": {
         "offline": 0,
         "online": 1,
-        }
+        },
+    "timeframe": {
+        "minimum": 0,            # 1.1.1970, 0:00h (unix time base)
+        "maximum": 2637085847,   # far in the future
+        },
     }
+
+
+For fine-tuning parameters you can define a list of known sets of twinks,
+thus each set contains character names played by the same player:
+known_twinks = [("name_a1", "name_a2"), ("name_b1", "name_b2", "name_b3")]
+
+Similarily you can define a list of names which you know are unique players:
+known_distinct = ["name_a1", "name_c", "name_d"]
+"""
 
 class Character():
     name = ""
