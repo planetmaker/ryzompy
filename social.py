@@ -9,7 +9,11 @@ Created on Sat Nov 20 10:56:43 2021
 import pandas as pd
 import numpy as np
 import scipy as sp
+
+import math
+
 import matplotlib.pyplot as plt
+
 
 from datetime import datetime
 
@@ -58,10 +62,57 @@ class Character:
         self.rawlog = dict()
         self.rawlog["status"] = [status]
         self.rawlog["time"] = [time]
+        self.data = pd.DataFrame(data = None)
 
     def append_entry(self, time, status):
         self.rawlog["status"].append(status)
         self.rawlog["time"].append(time)
+
+    def create_uniform_base(self, time_resolution = 1):
+        n = len(self.rawlog["time"])
+
+        time = list()
+        status = list()
+        for i in range(0, n-1):
+            mint = self.rawlog["time"][i]
+            maxt = self.rawlog["time"][i+1]
+            value = self.rawlog["status"][i]
+            dt = maxt - mint
+            n_steps = math.floor(dt / time_resolution)
+            time.extend([t + mint for t in range(0, n_steps, time_resolution)])
+            status.extend([value] * n_steps)
+        self.data["time"] = time
+        self.data["status"] = status
+
+    def fold_24hours(self):
+        """
+        Creates a 24-hour foleded status view for a person
+        It requires the presence of a uniform (time) base which
+        will be created, if not present. Default temporal spacing is 1s.
+
+        Returns
+        -------
+        None.
+        Creates:
+            self.24hdata["time"]          # array of time covering 24h
+            self.24hdata["status"]        # array of status covering 24h (cumulative)
+            self.24hdata["days"]          # array of number of days stacked for status
+        """
+        if "time" not in self.data:
+            self.create_uniform_base()
+
+        # 1.1.1970, 00:00:00 is 0-base.
+        # There are 86400 seconds in a day.
+        self.data["time24h"] = self.data["time"] % 86400
+
+
+        # There is a much more pythonic version for this... for now use a simple loop
+
+
+
+
+
+
 
     def plot_online(self, tmin=0, tmax=config["timeframe"]["maximum"]):
         fig, ax = plt.subplots()
@@ -134,7 +185,7 @@ def convert_raw(raw):
 if __name__ == '__main__':
     global personal_log # make available to cmd for individual analysis
     raw_status = read_status(config["status_filename"])
-    personal_log = convert_raw(raw_status)
+    pl = convert_raw(raw_status)
 
 
 
