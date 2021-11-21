@@ -52,6 +52,9 @@ Similarily you can define a list of names which you know are unique players:
 known_distinct = ["name_a1", "name_c", "name_d"]
 """
 
+seconds_per_day = 24 * 60 * 60
+seconds_per_week = seconds_per_day * 7
+
 class Character:
     """
     Contains the data about one character and low-level access
@@ -63,6 +66,8 @@ class Character:
         self.rawlog["status"] = [status]
         self.rawlog["time"] = [time]
         self.data = pd.DataFrame(data = None)
+        self.data24h = pd.DataFrame(data = None)
+        self.data7d = pd.DataFrame(data = None)
 
     def append_entry(self, time, status):
         self.rawlog["status"].append(status)
@@ -83,6 +88,16 @@ class Character:
             status.extend([value] * n_steps)
         self.data["time"] = time
         self.data["status"] = status
+        self.data["strg_date"]    = [datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S') for t in self.data["time"]]
+        self.data["strg_weekday"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
+        self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
+
+    def fold(self, timebase_name, duration, df):
+        if "time" not in self.data:
+            self.create_uniform_base()
+
+        self.data[timebase_name] = self.data["time"] % duration
+        df["time"] = [t for t in range(0, duration)]
 
     def fold_24hours(self):
         """
@@ -94,16 +109,41 @@ class Character:
         -------
         None.
         Creates:
-            self.24hdata["time"]          # array of time covering 24h
-            self.24hdata["status"]        # array of status covering 24h (cumulative)
-            self.24hdata["days"]          # array of number of days stacked for status
+            self.data24h["time"]          # array of time covering 24h
+            self.data24h["status"]        # array of status covering 24h (cumulative)
+            self.data24h["days"]          # array of number of days stacked for status
         """
-        if "time" not in self.data:
-            self.create_uniform_base()
+        self.fold("time24h", seconds_per_day, self.data24h)
+        self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
 
-        # 1.1.1970, 00:00:00 is 0-base.
-        # There are 86400 seconds in a day.
-        self.data["time24h"] = self.data["time"] % 86400
+    def fold_weekly(self):
+        """
+        Creates a weekly foleded status view for a person
+        It requires the presence of a uniform (time) base which
+        will be created, if not present. Default temporal spacing is 1s.
+
+        Returns
+        -------
+        None.
+        Creates:
+            self.data7d["time"]          # array of time covering 24h
+            self.data7d["status"]        # array of status covering 24h (cumulative)
+            self.data7d["days"]          # array of number of days stacked for status
+        """
+        self.fold("time7d", seconds_per_week, self.data7d)
+        self.data["strg_time"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
+
+
+    def create_time_strings(self):
+        """
+        Creates human-readable timestamps from the unix timestamps (column 'time')
+
+        Returns
+        -------
+        None.
+
+        """
+        self.data["timestrg"] = datetime.fromtimestamp(self.data["time"]).strftime('%Y-%m-%d %H:%M:%S')
 
 
     def plot_online(self, tmin=0, tmax=config["timeframe"]["maximum"]):
