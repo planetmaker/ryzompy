@@ -106,14 +106,6 @@ class Character:
         self.data["time24h"] = self.data["time"] % 86400
 
 
-        # There is a much more pythonic version for this... for now use a simple loop
-
-
-
-
-
-
-
     def plot_online(self, tmin=0, tmax=config["timeframe"]["maximum"]):
         fig, ax = plt.subplots()
         ax.step(self.rawlog["time"], self.rawlog["status"], linewidth=2.5)
