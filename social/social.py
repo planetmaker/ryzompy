@@ -35,11 +35,15 @@ The logfile 'example.log' is expected to be a csv file in the following format:
 "2", "name2","online","1632158679"
 ...
 
+The logfile 'fight.log' is expected to be a csv file in the following format:
+id,op,op_owner,op_owner_id,date,customer,customer_guild,attacking_guild,war_type,phase,created_at,created_by,modified_at,objective,comment
+
 
 The config itself specifies a few basic properties:
 
 config =  = {
     "status_filename": 'example.log',
+    "fightlog_filename": 'fight.log',
     "concurrency_jitter": 5,
     "status": {
         "offline": 0,
@@ -142,7 +146,6 @@ if __name__ == '__main__':
                 pl[name].plot_folded("time24hf", 24*60, "status", title=name)
             except KeyError:
                 print("Character not found!")
-
 
 
 
