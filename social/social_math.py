@@ -22,7 +22,6 @@ with socialgraph; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA."""
 
 from social_config import config
-from math import abs
 
 def similar(value1, value2, delta=config["concurrency_jitter"], direction=0):
     """

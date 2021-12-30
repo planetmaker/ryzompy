@@ -21,5 +21,23 @@ You should have received a copy of the GNU General Public License along
 with socialgraph; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA."""
 
+from datetime import datetime
+
 seconds_per_day = 24 * 60 * 60
 seconds_per_week = seconds_per_day * 7
+
+def unixtime_to_timestring(unixtime):
+    """
+
+    Parameters
+    ----------
+    unixtime : INT
+        Unix timestamp
+
+    Returns
+    -------
+    TYPE
+        Time formated as string %Y-%m-%d %H:%M:%S.
+
+    """
+    return datetime.fromtimestamp(unixtime).strftime('%Y-%m-%d %H:%M:%S')
