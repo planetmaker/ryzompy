@@ -25,11 +25,12 @@ import pandas as pd
 import numpy as np
 
 global config
-from social_config import config
+from social_config import config, guild_allegiance
+from social_globals import unixtime_to_timestring
 
 import requests
 import xmltodict
-from timedate import t
+from datetime import datetime
 
 global guild_dict
 
@@ -57,6 +58,10 @@ def api_guildname_by_id(id):
     return "Not found"
 
 
+"""
+The logfile 'fight.log' is expected to be a csv file in the following format:
+id,op,op_owner,op_owner_id,date,customer,customer_guild,attacking_guild,war_type,phase,created_at,created_by,modified_at,objective,comment
+"""
 
 def guild_fights():
     try:
@@ -72,6 +77,26 @@ def guild_fights():
     opguilds = set.union(owners, customers, attackers)
 
     # Analyse by outpost
+    allegiance_count = {
+        'Kami': 0,
+        'Kara': 0,
+        'Maro': 0,
+        'Ranger': 0,
+        'Unknown': 0,
+        }
     for outpost in outposts:
         subset = fightlog[fightlog['op'] == outpost]
+        print(outpost, ':')
+        for index,fight in subset.iterrows():
+            try:
+                allegiance = guild_allegiance[fight['customer_guild']][0]
+                allegiance_count[allegiance] = allegiance_count[allegiance] + 1
+            except:
+                allegiance = "Unknown"
+                allegiance_count["Unknown"] = allegiance_count["Unknown"] + 1
+            print(unixtime_to_timestring(fight['date']), allegiance, api_guildname_by_id(fight['customer_guild']), ':', api_guildname_by_id(fight['op_owner_id']), api_guildname_by_id(fight['attacking_guild']))
+        print('')
 
+    print("Summary of customers:")
+    for item, value in allegiance_count:
+        print(item,':', value)
