@@ -98,5 +98,5 @@ def guild_fights():
         print('')
 
     print("Summary of customers:")
-    for item, value in allegiance_count:
+    for item, value in allegiance_count.items():
         print(item,':', value)
