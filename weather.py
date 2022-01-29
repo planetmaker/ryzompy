@@ -55,7 +55,7 @@ translation_table = {
     'zorai':         {'name': 'Seen,Nexus,\nDschungel,Wald','colour': 'fuchsia'},
     # 'nexus':         {'name':'Nexus', 'colour': 'green'},
     # 'zorai':         {'name': 'Dschungel, Nexus','colour': 'fuchsia'},
-    'sources':       {'name':'Uhrwurzeln', 'colour': 'black'},
+    'sources':       {'name':'Urwurzeln', 'colour': 'black'},
     # 'sources':       {'name':'Verbotene Quelle', 'colour': 'lightsteelblue'},
     # 'bagne':         {'name':'Abgrund von Ichor','colour': 'greenyellow'},
     # 'terre':         {'name':'Niemandsland',     'colour': 'sandybrown'},
