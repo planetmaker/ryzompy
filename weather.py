@@ -12,6 +12,7 @@ import requests
 from argparse import ArgumentParser
 import json
 import pandas as pd
+import os
 
 import matplotlib.pyplot as plt
 
@@ -45,16 +46,20 @@ update_frequency = args.update_frequency
 # print(args.debug_level)
 # print(args.update_frequency)
 
+ende = False
+
 translation_table = {
-    'tryker':        {'name': 'Seenland', 'colour': 'blue'},
-    'matis':         {'name': 'Wald',     'colour': 'green'},
+    # 'tryker':        {'name': 'Seenland', 'colour': 'blue'},
+    # 'matis':         {'name': 'Wald',     'colour': 'green'},
     'fyros':         {'name': 'Wüste',    'colour': 'orange'},
-    'zorai':         {'name': 'Dschungel','colour': 'fuchsia'},
-#    'nexus':         'Nexus',
-    'sources':       {'name':'Verbotene Quelle', 'colour': 'lightsteelblue'},
-    'bagne':         {'name':'Abgrund von Ichor','colour': 'greenyellow'},
-    'terre':         {'name':'Niemandsland',     'colour': 'sandybrown'},
-    'route_gouffre': {'name':'Länder von Umbra', 'colour': 'lightpink'},
+    'zorai':         {'name': 'Seen,Nexus,\nDschungel,Wald','colour': 'fuchsia'},
+    # 'nexus':         {'name':'Nexus', 'colour': 'green'},
+    # 'zorai':         {'name': 'Dschungel, Nexus','colour': 'fuchsia'},
+    'sources':       {'name':'Uhrwurzeln', 'colour': 'black'},
+    # 'sources':       {'name':'Verbotene Quelle', 'colour': 'lightsteelblue'},
+    # 'bagne':         {'name':'Abgrund von Ichor','colour': 'greenyellow'},
+    # 'terre':         {'name':'Niemandsland',     'colour': 'sandybrown'},
+    # 'route_gouffre': {'name':'Länder von Umbra', 'colour': 'lightpink'},
 #    'newbieland':    'Silan',
 #    'kitiniere':     'Kitin-Nest'
     }
@@ -155,7 +160,8 @@ def get_nights(start_hour, duration):
 
 def on_close(event):
     print("Terminating Ryzom weather forecast")
-    quit()
+    global ende
+    ende = True
 
 # #Pandas Page
 # @app.route('/pandas', methods=("POST", "GET"))
@@ -205,7 +211,9 @@ def weather_plot():
 
     fig.canvas.mpl_connect('close_event', on_close)
 
-    while True:
+    global ende
+    ende = False
+    while not ende:
         rl_time = datetime.datetime.now()
         dt = (rl_time - old_rl_time).total_seconds()
         if args.debug_level > 0:
@@ -249,7 +257,7 @@ def weather_plot():
             w2[location]['value'] = 100 * w2[location]['value']
 
         yticks = [0, 16.7, 33.4, 50.0, 66.6, 83.4, 100]
-        xticks = w2['zorai'].index.values
+        xticks = w2['sources'].index.values
         xticklabels = [time_of_day(x) for x in xticks]
 
         for item,value in translation_table.items():
