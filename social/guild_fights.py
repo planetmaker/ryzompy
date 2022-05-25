@@ -42,7 +42,7 @@ def api_guildname_by_id(id):
     #     else:
     #         raise
     # except:
-    data = requests.get(config['api']['base'] + config['api']['guilds'])
+    data = requests.get(config['ryzom_api']['base'] + config['ryzom_api']['guilds'])
     intermediate = xmltodict.parse(data.text)
     guild_dict = intermediate['guilds']['guild']
 
