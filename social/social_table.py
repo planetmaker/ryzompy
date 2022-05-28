@@ -7,14 +7,15 @@ Created on Fri May 27 15:30:20 2022
 """
 
 import pandas as pd
-import social_API
+from social_API import Social_API
+from character import Character
 
 class Social_Table():
     """
     master class to contain all data available on the social context
     """
 
-    def init(self):
+    def __init__(self, from_API = True):
         """
         Initialize the table
 
@@ -24,9 +25,26 @@ class Social_Table():
 
         """
         self.changes = pd.DataFrame(columns=['id', 'time', 'name', 'status'])
-        self.charinfo = pd.DataFrame(columns=['name', 'num_entries'])
+        self.charinfo = pd.DataFrame(columns=['name', 'num_entries', 'char'])
+        self.SAPI = Social_API()
+        if from_API:
+            name_list = self.SAPI.get_name_list()
+            self.charinfo = pd.DataFrame([], index=name_list, columns=['num_entries', 'char'])
+        else:
+            print("Reading from csv currently not implemented!\nName list not populated.")
 
-    def get_changes(self):
+    def get_name_table(self):
+        """
+        Return the list of names and character objects
+
+        Returns
+        -------
+        List of names with associated character objects
+
+        """
+        return self.charinfo
+
+    def get_changes_table(self):
         """
         Return the whole dataframe unabridged
 
@@ -38,7 +56,7 @@ class Social_Table():
         return self.changes
 
 
-    def download_name(self, name):
+    def api_download_name(self, name):
         """
         Add the data by name to the table
 
@@ -52,20 +70,16 @@ class Social_Table():
         None.
 
         """
-        name_list = social_API.get_status_change_by_name(name)
-        if name_list == None:
+        name_data = self.SAPI.get_status_change_by_name(name)
+        if name_data == None:
             return
+        df = pd.DataFrame(name_data)
+        df.rename(columns={"created_at": "time"}, inplace = True)
+        self.changes = pd.concat([self.changes, df])
 
-        for item in name_list:
-            self.changes.append({
-                'id':       item['id'],
-                'time':     item['created_at'],
-                'status':   item['status'],
-                'name':     item['name'],
-                }, ignore_index=True)
-        self.charinfo.append({'name':item['name'], 'num_entries': len(name_list)})
+        self.charinfo['num_entries'][name]  = len(name_data)
 
-    def download_names(self, names):
+    def api_download_names(self, names):
         """
         Add the data by name(s) to the table
 
@@ -80,9 +94,9 @@ class Social_Table():
 
         """
         if type(names) == 'str':
-            download_name(names)
+            self.api_download_name(names)
         elif type(names) == 'list':
             for name in names:
-                download_name(name)
+                self.api_download_name(name)
 
 
