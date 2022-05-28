@@ -73,7 +73,7 @@ class Social_API:
             r = requests.get(url)
         except:
             pass
-        if r.status_code is not 200:
+        if r.status_code != 200:
             return None
 
         # only try to evaluate the return text when the status is OK.
