@@ -25,6 +25,18 @@ class Social_API:
             It should contain an entry 'social_api' with the following sub-entries:
                 'base', 'name_list', and 'name_status_change'
 
+            'base':
+                is the main URL, the rest is extensions to the single end points
+            'name_list':
+                returns a list of all names stored in the DB of the format:
+                [ "name1", "name2", ... ]
+            'name_status_change':
+                List of the format (individual DB entries):
+                [ { "id": 332583, "name": "example", "status": "offline", "created_at": 1653079681 },
+                  { "id": 332376, "name": "example", "status": "online", "created_at": 1653067760 },
+                  ...
+                ]
+
         Returns
         -------
         None.
