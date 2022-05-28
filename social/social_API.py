@@ -42,6 +42,11 @@ class Social_API:
         None.
 
         """
+        self.url_config = {
+            'base':             'https://example.com',
+            'name_list':        '/json.php',
+            'name_list_change': '/json.php?name=',
+            }
         self.url_config = config['social_api']
 
     def get(self, url=""):
