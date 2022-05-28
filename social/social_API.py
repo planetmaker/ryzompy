@@ -19,7 +19,7 @@ class Social_API:
     Contains the data and access methods about the social API
     """
 
-    def __init__(self, cfg=None):
+    def __init__(self, cfg = None):
         """
         Initialize the Social_API
 
@@ -58,7 +58,7 @@ class Social_API:
                     'name_list_change': '/json.php?name=',
                     }
 
-    def get(self, url=""):
+    def get(self, url=''):
         """
         Read from the API with the given URL
 
@@ -76,12 +76,12 @@ class Social_API:
             It will return None, if the webpage status is not 200.
 
         """
-        if url == "":
+        if url == '':
             url = self.url_config['base']
         try:
             r = requests.get(url)
         except:
-            pass
+            return None
         if r.status_code != 200:
             return None
 
@@ -98,7 +98,8 @@ class Social_API:
             A list with all names in the API.
 
         """
-        return self.get(url=self.url_config['base'] + self.url_config['name_list'])
+        url = self.url_config['base'] + self.url_config['name_list']
+        return self.get(url)
 
     def get_status_change_by_name(self, name):
         """
