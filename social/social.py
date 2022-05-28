@@ -26,6 +26,7 @@ import numpy as np
 
 global config
 from social_config import config
+from social_table import Social_Table
 from character import Character
 
 """
@@ -44,10 +45,16 @@ The config itself specifies a few basic properties:
 config =  = {
     "status_filename": 'example.log',
     "fightlog_filename": 'fight.log',
+    "social_api": {
+        "base": "https://example.com",
+        "name_list": "/name.php",
+        "name_status_change": "/name.php?name=",
+        }
     "concurrency_jitter": 5,
     "status": {
         "offline": 0,
         "online": 1,
+        "unknown": pd.NA,
         },
     "timeframe": {
         "minimum": 0,            # 1.1.1970, 0:00h (unix time base)
@@ -132,20 +139,32 @@ def convert_raw(raw):
 
 if __name__ == '__main__':
     global personal_log # make available to cmd for individual analysis
+    global st
+    global names
     print("Using config:")
     print(config)
 
-    raw_status = read_status(config["status_filename"])
-    pl = convert_raw(raw_status)
+    # raw_status = read_status(config["status_filename"])
+    st = Social_Table()
 
-    if "plot_24hours" in config:
-        for name in config["plot_24hours"]:
-            print("Plotting " + name)
-            try:
-                pl[name].fold_24hours()
-                pl[name].plot_folded("time24hf", 24*60, "status", title=name)
-            except KeyError:
-                print("Character not found!")
+    names = set(config['known_distinct']).union(set(config['vino_chars']))
+    for item in config['known_twinks']:
+        names = names.union(set(item))
+    print("Using names: ", names)
+
+    # for name in names:
+    #     st.api_download_name(name)
+    st.api_download_names(names)
+
+
+    # if "plot_24hours" in config:
+    #     for name in config["plot_24hours"]:
+    #         print("Plotting " + name)
+    #         try:
+    #             pl[name].fold_24hours()
+    #             pl[name].plot_folded("time24hf", 24*60, "status", title=name)
+    #         except KeyError:
+    #             print("Character not found!")
 
 
 
