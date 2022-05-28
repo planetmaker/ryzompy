@@ -78,6 +78,7 @@ class Social_Table():
         self.changes = pd.concat([self.changes, df])
 
         self.charinfo['num_entries'][name]  = len(name_data)
+        # self.charinfo['char'][name] = Character(name, df)
 
     def api_download_names(self, names):
         """
@@ -95,8 +96,9 @@ class Social_Table():
         """
         if type(names) == 'str':
             self.api_download_name(names)
-        elif type(names) == 'list':
+        elif (type(names) == 'list' or type(names) == 'set'):
             for name in names:
                 self.api_download_name(name)
-
+        else:
+            print("Unsupported type for 'names'!")
 
