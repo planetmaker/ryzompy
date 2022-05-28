@@ -8,14 +8,18 @@ Created on Wed May 25 20:48:03 2022
 
 import requests
 import ast
-from social_config import config
+try:
+    from social_config import config
+except:
+    print("Config not found! Using defaults. Access may fail.")
+    pass
 
 class Social_API:
     """
     Contains the data and access methods about the social API
     """
 
-    def __init__(self, config):
+    def __init__(self, cfg=None):
         """
         Initialize the Social_API
 
@@ -42,12 +46,17 @@ class Social_API:
         None.
 
         """
-        self.url_config = {
-            'base':             'https://example.com',
-            'name_list':        '/json.php',
-            'name_list_change': '/json.php?name=',
-            }
-        self.url_config = config['social_api']
+        if cfg is not None:
+            self.url_config = cfg['social_api']
+        else:
+            try:
+                self.url_config = config['social_api']
+            except:
+                self.url_config = {
+                    'base':             'https://example.com',
+                    'name_list':        '/json.php',
+                    'name_list_change': '/json.php?name=',
+                    }
 
     def get(self, url=""):
         """
