@@ -8,6 +8,7 @@ Created on Wed May 25 20:48:03 2022
 
 import requests
 import ast
+from social_config import config
 
 class Social_API:
     """
