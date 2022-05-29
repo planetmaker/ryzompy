@@ -89,6 +89,16 @@ class Character:
         self.data["strg_weekday"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
         self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
 
+
+    def get_raw(self):
+        return self.rawlog
+
+    def get_data(self):
+        return self.data
+
+    def get_name(self):
+        return self.name
+
     def fold(self, timebase_name, duration, df):
         if "time" not in self.data:
             self.create_uniform_base()
