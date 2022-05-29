@@ -24,6 +24,8 @@ with socialgraph; if not, write to the Free Software Foundation, Inc.,
 import math
 import pandas as pd
 import matplotlib.pyplot as plt
+import requests
+import ast
 
 from datetime import datetime
 
@@ -35,34 +37,54 @@ class Character:
     Contains the data about one character and low-level access
     """
 
-    def __init__(self, name, time, status):
+    def __init__(self, name, rawdata):
         self.name = name
-        self.rawlog = dict()
-        self.rawlog["status"] = [status]
-        self.rawlog["time"] = [time]
+        self.rawlog = rawdata
         self.data = pd.DataFrame(data = None)
         self.data24h = pd.DataFrame(data = None)
         self.data7d = pd.DataFrame(data = None)
+        self.twink = pd.DataFrame(data = None)
 
-    def append_entry(self, time, status):
-        self.rawlog["status"].append(status)
-        self.rawlog["time"].append(time)
+    def create_uniform_base(self,
+                            time_resolution = config['concurrency_jitter'],
+                            min_time = config['timeframe']['minimum'],
+                            max_time = config['timeframe']['maximum']):
 
-    def create_uniform_base(self, time_resolution = 1):
-        n = len(self.rawlog["time"])
+        time = [t for t in range(min_time, max_time, time_resolution)]
+        status = [pd.NA for t in range(min_time, max_time, time_resolution)]
+        ntime = len(time)
 
-        time = list()
-        status = list()
-        for i in range(0, n-1):
-            mint = self.rawlog["time"][i]
-            maxt = self.rawlog["time"][i+1]
-            value = self.rawlog["status"][i]
-            dt = maxt - mint
-            n_steps = math.floor(dt / time_resolution)
-            time.extend([t + mint for t in range(0, n_steps, time_resolution)])
-            status.extend([value] * n_steps)
-        self.data["time"] = time
-        self.data["status"] = status
+
+        n_elements = len(self.rawlog["time"])
+        ti = 0 # index to time
+        ri = 0 # index to rawlog
+        if (self.rawlog['time'][ri] < time[ti]):
+            while self.rawlog['time'][ri] < time[ti]:
+                ri = ri + 1
+        else:
+            while time[ti] <= self.rawlog['time'][ri]:
+                ti = ti + 1
+
+        value = self.rawlog['status'][ri]
+        while ti < ntime:
+            if self.rawlog['time'][ri] < time[ti]:
+                ri = ri + 1
+                if ri == n_elements:
+                    break
+                value = self.rawlog['status'][ri]
+                continue
+
+            try:
+                status[ti] = config['status'][value]
+            except KeyError:
+                pass
+            except:
+                pass
+
+            ti = ti + 1
+
+        self.data['time']         = time
+        self.data['status']       = status
         self.data["strg_date"]    = [datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S') for t in self.data["time"]]
         self.data["strg_weekday"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
         self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
@@ -72,7 +94,7 @@ class Character:
             self.create_uniform_base()
 
         self.data[timebase_name] = self.data["time"] % duration
-        df["time"] = [t for t in range(0, duration)]
+        # df["time"] = [t for t in range(0, duration)]
 
     def fold_24hours(self):
         """
@@ -90,7 +112,7 @@ class Character:
         """
         self.fold("time24h", seconds_per_day, self.data24h)
         self.data["time24hf"] = self.data["time24h"] / 3600
-        self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
+        # self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
 
     def fold_weekly(self):
         """
@@ -108,7 +130,7 @@ class Character:
         """
         self.fold("time7d", seconds_per_week, self.data7d)
         self.data["time7df"] = self.data["time7d"] / 3600 / 24
-        self.data["strg_time"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
+        # self.data["strg_time"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
 
 
     def create_time_strings(self):
@@ -121,6 +143,26 @@ class Character:
 
         """
         self.data["timestrg"] = datetime.fromtimestamp(self.data["time"]).strftime('%Y-%m-%d %H:%M:%S')
+
+    def get_time_for_status(self, status, tmin=config["timeframe"]["minimum"], tmax=config["timeframe"]["maximum"]):
+        """
+        Parameters
+        ----------
+        status : string
+            online status to search for.
+        tmin : long int, optional
+            minimum time to consider. The default is config["timeframe"]["minimum"].
+        tmax : long int, optional
+            maximum time to consider. The default is config["timeframe"]["maximum"].
+
+        Returns
+        -------
+        status_timestamps : list of long int
+            list of timestamps which match the status change
+
+        """
+        status_timestamps = []
+        return status_timestamps
 
 
     def plot_online(self, tmin=0, tmax=config["timeframe"]["maximum"]):
@@ -177,7 +219,7 @@ class Character:
         if not "time24hf" in self.data:
             self.fold_24hours()
 
-        self.plot_folded("time24hf", 24*60, "status") # 1-minute bins
+        self.plot_folded("time24hf", 24*60 / 2, "status") # 2-minute bins
 
     def plot_week(self):
         """
