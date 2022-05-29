@@ -78,7 +78,15 @@ class Social_Table():
         self.changes = pd.concat([self.changes, df])
 
         self.charinfo['num_entries'][name]  = len(name_data)
-        # self.charinfo['char'][name] = Character(name, df)
+        try:
+            self.charinfo['char'][name] = Character(name, df[['time','status']])
+            # print("Char data added: ", name)
+        except KeyError as e:
+            print("Error adding char data for ", name)
+            print(e)
+        except:
+            print("Unknown error for ", name)
+
 
     def api_download_names(self, names):
         """
