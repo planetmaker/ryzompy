@@ -136,6 +136,13 @@ def convert_raw(raw):
 
     return characters
 
+def plot_change_offsets():
+    cl = st.get_changes_table()
+    times = list(cl['time'])
+    times.sort()
+    dtimes = [x - times[i-1] for i, x in enumerate(times)][1:]
+    n, bins, patches = plt.hist(x=dtimes, bins=bins, color='#0504aa', alpha=0.7, rwidth=0.85)
+
 
 if __name__ == '__main__':
     global personal_log # make available to cmd for individual analysis
@@ -147,24 +154,24 @@ if __name__ == '__main__':
     # raw_status = read_status(config["status_filename"])
     st = Social_Table()
 
-    names = set(config['known_distinct']).union(set(config['vino_chars']))
+    names = set(config['known_distinct']).union(set(config['vino_chars']), set(config['known_leaders']))
     for item in config['known_twinks']:
         names = names.union(set(item))
     print("Using names: ", names)
 
-    # for name in names:
-    #     st.api_download_name(name)
-    st.api_download_names(names)
+    for name in names:
+        st.api_download_name(name)
+    # st.api_download_names(names)
 
 
-    # if "plot_24hours" in config:
-    #     for name in config["plot_24hours"]:
-    #         print("Plotting " + name)
-    #         try:
-    #             pl[name].fold_24hours()
-    #             pl[name].plot_folded("time24hf", 24*60, "status", title=name)
-    #         except KeyError:
-    #             print("Character not found!")
+    if "plot_24hours" in config:
+        for name in config["plot_24hours"]:
+            print("Plotting " + name)
+            try:
+                pl[name].fold_24hours()
+                pl[name].plot_folded("time24hf", 24*60, "status", title=name)
+            except KeyError:
+                print("Character not found!")
 
 
 
