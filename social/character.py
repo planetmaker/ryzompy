@@ -39,7 +39,7 @@ class Character:
 
     def __init__(self, name, rawdata):
         self.name = name
-        self.rawlog = rawdata
+        self.rawlog = rawdata.set_index('time')
         self.data = pd.DataFrame(data = None)
         self.data24h = pd.DataFrame(data = None)
         self.data7d = pd.DataFrame(data = None)
@@ -50,41 +50,12 @@ class Character:
                             min_time = config['timeframe']['minimum'],
                             max_time = config['timeframe']['maximum']):
 
-        time = [t for t in range(min_time, max_time, time_resolution)]
-        status = [pd.NA for t in range(min_time, max_time, time_resolution)]
-        ntime = len(time)
-
-
-        n_elements = len(self.rawlog["time"])
-        ti = 0 # index to time
-        ri = 0 # index to rawlog
-        if (self.rawlog['time'][ri] < time[ti]):
-            while self.rawlog['time'][ri] < time[ti]:
-                ri = ri + 1
-        else:
-            while time[ti] <= self.rawlog['time'][ri]:
-                ti = ti + 1
-
-        value = self.rawlog['status'][ri]
-        while ti < ntime:
-            if self.rawlog['time'][ri] < time[ti]:
-                ri = ri + 1
-                if ri == n_elements:
-                    break
-                value = self.rawlog['status'][ri]
-                continue
-
-            try:
-                status[ti] = config['status'][value]
-            except KeyError:
-                pass
-            except:
-                pass
-
-            ti = ti + 1
-
-        self.data['time']         = time
-        self.data['status']       = status
+        tmin = max([min(self.rawlog.index), min_time])
+        tmax = min([max(self.rawlog.index), max_time])
+        timebase = [t for t in range(tmin, tmax, time_resolution)]
+        self.data = self.rawlog.reindex(timebase, method='ffill')
+        self.data.index = datetime.fromtimestamp(self.data.index) # TODO: add tz=CE(S)T // local time zone
+        self.data['status'].replace({'online':1, 'offline':0, '':pd.NA})
         self.data["strg_date"]    = [datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S') for t in self.data["time"]]
         self.data["strg_weekday"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
         self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
@@ -100,11 +71,13 @@ class Character:
         return self.name
 
     def fold(self, timebase_name, duration, df):
-        if "time" not in self.data:
+        if self.data == None:
             self.create_uniform_base()
 
-        self.data[timebase_name] = self.data["time"] % duration
-        # df["time"] = [t for t in range(0, duration)]
+        self.data[timebase_name] = self.index % duration
+        df = pd.DataFrame()
+        df['time'] = self.data[timebase_name]
+        df['status'] = self.data['status']
 
     def fold_24hours(self):
         """
@@ -121,7 +94,7 @@ class Character:
             self.data24h["days"]          # array of number of days stacked for status
         """
         self.fold("time24h", seconds_per_day, self.data24h)
-        self.data["time24hf"] = self.data["time24h"] / 3600
+        # self.data["time24hf"] = self.data["time24h"] / 3600
         # self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
 
     def fold_weekly(self):
@@ -177,7 +150,7 @@ class Character:
 
     def plot_online(self, tmin=0, tmax=config["timeframe"]["maximum"]):
         fig, ax = plt.subplots()
-        ax.step(self.rawlog["time"], self.rawlog["status"], linewidth=2.5)
+        ax.step(self.rawlog.index, self.rawlog["status"], linewidth=2.5)
         # ax.set(xlim=(config["timeframe"]["minimum"], config["timeframe"]["maximum"]))
         plt.show()
 

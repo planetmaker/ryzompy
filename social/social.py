@@ -57,8 +57,8 @@ config =  = {
         "unknown": pd.NA,
         },
     "timeframe": {
-        "minimum": 0,            # 1.1.1970, 0:00h (unix time base)
-        "maximum": 2637085847,   # far in the future
+        "minimum": 1632158674,            # 0 => 1.1.1970, 0:00h (unix time base)
+        "maximum": 1653799284,            # like now
         },
     }
 

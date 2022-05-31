@@ -7,6 +7,7 @@ Created on Fri May 27 15:30:20 2022
 """
 
 import pandas as pd
+import datetime
 from social_API import Social_API
 from character import Character
 
@@ -26,12 +27,59 @@ class Social_Table():
         """
         self.changes = pd.DataFrame(columns=['id', 'time', 'name', 'status'])
         self.charinfo = pd.DataFrame(columns=['name', 'num_entries', 'char'])
+        self.timeinfo = pd.DataFrame()
         self.SAPI = Social_API()
         if from_API:
             name_list = self.SAPI.get_name_list()
             self.charinfo = pd.DataFrame([], index=name_list, columns=['num_entries', 'char'])
+            self.timeinfo = pd.DataFrame([])
         else:
             print("Reading from csv currently not implemented!\nName list not populated.")
+        self.filename = "social_table.pkl"
+
+    def read_pickle(self, filename=""):
+        """
+        Read the changes Dataframe from a pickle file
+
+        Parameters
+        ----------
+        filename : TYPE, optional
+            DESCRIPTION. The default is "".
+
+        Returns
+        -------
+        None.
+
+        """
+        if filename == "":
+            try:
+                filename = config["status_filename"]
+            except:
+                filename = self.filename
+        self.changes = pd.read_pickle(filename)
+
+
+
+    def save_pickle(self, filename=""):
+        """
+        Save the changes Dataframe to a pickle file
+
+        Parameters
+        ----------
+        filename : TYPE, optional
+            DESCRIPTION. The default is "".
+
+        Returns
+        -------
+        None.
+
+        """
+        if filename == "":
+            try:
+                filename = config["status_filename"]
+            except:
+                filename = self.filename
+        self.changes.to_pickle(filename)
 
     def get_name_table(self):
         """
@@ -55,6 +103,16 @@ class Social_Table():
         """
         return self.changes
 
+    def get_time_table(self):
+        """
+        Return the time table
+
+        Returns
+        -------
+        dataframe with status times of all characters
+
+        """
+        return self.timeinfo
 
     def api_download_name(self, name):
         """
@@ -75,17 +133,29 @@ class Social_Table():
             return
         df = pd.DataFrame(name_data)
         df.rename(columns={"created_at": "time"}, inplace = True)
-        self.changes = pd.concat([self.changes, df])
+        try:
+            self.changes = pd.concat([self.changes, df])
+        except:
+            print("Cannot merge data for ", name)
+            print(df)
 
         self.charinfo['num_entries'][name]  = len(name_data)
         try:
             self.charinfo['char'][name] = Character(name, df[['time','status']])
-            # print("Char data added: ", name)
+            # Add data to global time table
+            df['status'].replace({'online':1, 'offline':0, '':pd.NA}, inplace=True)
+            df.rename(columns={'status': name}, inplace = True)
+            df['time'] = [datetime.datetime.fromtimestamp(t) for t in df['time']]
+            df.set_index('time', inplace=True)
+            print(df)
+            self.timeinfo = self.timeinfo.combine_first(df)
         except KeyError as e:
             print("Error adding char data for ", name)
             print(e)
-        except:
-            print("Unknown error for ", name)
+            print(df)
+        # except:
+        #     print("Unknown error for ", name)
+        #     print(df)
 
 
     def api_download_names(self, names):
