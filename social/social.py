@@ -160,7 +160,7 @@ if __name__ == '__main__':
     print("Using names: ", names)
 
     for name in names:
-        st.api_download_name(name)
+        st.api_download_changes_by_name(name)
     # st.api_download_names(names)
 
 

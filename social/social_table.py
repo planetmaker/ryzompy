@@ -136,7 +136,20 @@ class Social_Table():
 
 
 
-    def api_download_name(self, name):
+    def api_download_name_list(self):
+        """
+        Download the list of names from API server
+
+        Returns
+        -------
+        None.
+
+        """
+        name_list = self.SAPI.get_name_list()
+        self.charinfo = pd.DataFrame([], index=name_list, columns=['num_entries', 'char'])
+
+
+    def api_download_changes_by_name(self, name):
         """
         Add the data by name to the table
 
@@ -159,22 +172,62 @@ class Social_Table():
             self.changes = pd.concat([self.changes, df])
         except:
             print("Cannot merge data for ", name)
+            self.charinfo['num_entries'][name] = 0
             print(df)
 
         self.charinfo['num_entries'][name]  = len(name_data)
-        try:
-            self.charinfo['char'][name] = Character(name, df[['time','status']])
-            print("Added ",name," to character list.")
-        except KeyError as e:
-            print("Error adding char data for ", name)
-            print(e)
-            print(df)
-        except:
-            print("Unknown error for ", name)
-            print(df)
+        # Currently the Character class is not needed or used. Disabled to save memory
+        # try:
+        #     self.charinfo['char'][name] = Character(name, df[['time','status']])
+        #     print("Added ",name," to character list.")
+        # except KeyError as e:
+        #     print("Error adding char data for ", name)
+        #     print(e)
+        #     print(df)
+        # except:
+        #     print("Unknown error for ", name)
+        #     print(df)
 
+    def create_name_table(self):
+        """
+        Create or update the charinfo table from the changes table
+
+        Returns
+        -------
+        None.
+
+        """
+        self.changes.drop_duplicates(ignore_index=True, inplace=True)
+        # df = pd.DataFrame(columns=['name','num_entries'])
+        frames = dict()
+        frames = {name: len(self.changes[self.changes['name'].where(self.changes['name'] == name).notna()].index) for name in set(self.changes['name'])}
+        print(frames)
+        self.charinfo = pd.DataFrame.from_dict(frames, orient='index', columns=['num_entries'])
+
+
+
+    def create_time_table(self, min_datapoints = None):
+        """
+        Create a global table with status for each character and a common time basis
+
+        Parameters
+        ----------
+        min_datapoints : int, optional
+            Minimal number of data points for a character to be inserted in the table
+            The default is taken from the config file.
+
+        Returns
+        -------
+        None.
+
+        """
         # Add data to global time table
-        if len(name_data) >= config['min_datapoints']:
+        if min_datapoints == None:
+            min_datapoints = config['min_datapoints']
+        names = list(self.charinfo.loc[(self.charinfo['num_entries'] >= min_datapoints)].index)
+
+        for name in names:
+            df = self.changes.loc[(self.changes['name'] == name)][['time','name']]
             try:
                 df['status'].replace({'online':1, 'offline':0, '':pd.NA}, inplace=True)
                 df.rename(columns={'status': name}, inplace = True)
@@ -192,7 +245,32 @@ class Social_Table():
 
 
 
-    def api_download_names(self, names, alle=False):
+    def get_cdf_login_count(self, do_plot = False):
+        """
+        Get the distribution function of the number of data points for characters
+
+        Parameters
+        ----------
+        do_plot : bool, optional
+            Whether to plot the distribution functions. The default is False.
+
+        Returns
+        -------
+        stat_df : DataFrame with the probability (pdf) and cumulative (cdf)
+                  distribution functions
+
+        """
+        stat_df = pd.DataFrame(self.charinfo['num_entries'].value_counts()).sort_index().rename(columns={'num_entries':'count'})
+        stat_df['pdf'] = stat_df['count'] / sum(stat_df['count'])
+        stat_df['cdf'] = stat_df['pdf'].cumsum()
+        stat_df = stat_df.reset_index()
+
+        if do_plot:
+            stat_df.plot.bar(x = 'index', y = ['pdf', 'cdf'], grid = False)
+
+        return stat_df
+
+    def api_download_changes_by_names(self, names, alle=False):
         """
         Add the data by name(s) to the table
 
@@ -210,10 +288,10 @@ class Social_Table():
             names = list(self.charinfo.index)
 
         if isinstance(names, str):
-            self.api_download_name(names)
+            self.api_download_changes_by_name(names)
         elif (isinstance(names, list) or isinstance(names, set)):
             for name in names:
-                self.api_download_name(name)
+                self.api_download_changes_by_name(name)
         else:
             print("Unsupported type for 'names': ", type(names))
 
