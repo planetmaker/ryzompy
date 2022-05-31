@@ -50,7 +50,7 @@ config =  = {
         "name_list": "/name.php",
         "name_status_change": "/name.php?name=",
         }
-    "concurrency_jitter": 5,
+    "concurrency_jitter": 60,
     "status": {
         "offline": 0,
         "online": 1,
