@@ -227,7 +227,7 @@ class Social_Table():
         names = list(self.charinfo.loc[(self.charinfo['num_entries'] >= min_datapoints)].index)
 
         for name in names:
-            df = self.changes.loc[(self.changes['name'] == name)][['time','name']]
+            df = self.changes.loc[(self.changes['name'] == name)][['time','status']]
             try:
                 df['status'].replace({'online':1, 'offline':0, '':pd.NA}, inplace=True)
                 df.rename(columns={'status': name}, inplace = True)
