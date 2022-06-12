@@ -9,7 +9,6 @@ Created on Fri May 27 15:30:20 2022
 import pandas as pd
 import datetime
 from social_API import Social_API
-from character import Character
 import matplotlib.pyplot as plt
 
 global config
@@ -20,7 +19,7 @@ class Social_Table():
     master class to contain all data available on the social context
     """
 
-    def __init__(self, from_API = True):
+    def __init__(self, from_API = False):
         """
         Initialize the table
 
@@ -29,21 +28,24 @@ class Social_Table():
         None.
 
         """
-        self.changes = pd.DataFrame(columns=['id', 'time', 'name', 'status'])
-        self.charinfo = pd.DataFrame(columns=['name', 'num_entries', 'char'])
+        self.logentries = pd.DataFrame(columns=['id', 'time', 'name', 'status'])
+        self.charinfo = pd.DataFrame(columns=['name', 'num_entries'])
         self.timeinfo = pd.DataFrame()
         self.SAPI = Social_API()
-        if from_API:
-            name_list = self.SAPI.get_name_list()
-            self.charinfo = pd.DataFrame([], index=name_list, columns=['num_entries', 'char'])
-            self.timeinfo = pd.DataFrame([])
-        else:
-            print("Reading from csv currently not implemented!\nName list not populated.")
+        self.time_log_array = []
+        self.timeinfo = pd.SparseDtype(("int", 0))
         self.filenames = {
             "changes": "social_table_changes.pkl",
             "charinfo": "social_table_charinfo.pkl",
             "timeinfo": "social_table_timeinfo.pkl",
             }
+
+        if from_API:
+            name_list = self.SAPI.get_name_list()
+            self.charinfo = pd.DataFrame([], index=name_list, columns=['num_entries'])
+        else:
+            print("Trying to read data from pickle...")
+            self.read_pickle()
 
 
 
@@ -66,7 +68,7 @@ class Social_Table():
                 filenames = config["social_filenames"]
             except:
                 filenames = self.filenames
-        self.changes = pd.read_pickle(filenames['changes'])
+        self.logentries = pd.read_pickle(filenames['changes'])
         self.charinfo = pd.read_pickle(filenames['charinfo'])
         self.timeinfo = pd.read_pickle(filenames['timeinfo'])
 
@@ -91,7 +93,7 @@ class Social_Table():
                 filenames = config["social_filenames"]
             except:
                 filenames = self.filenames
-        self.changes.to_pickle(filenames['changes'])
+        self.logentries.to_pickle(filenames['changes'])
         self.charinfo.to_pickle(filenames['charinfo'])
         self.timeinfo.to_pickle(filenames['timeinfo'])
 
@@ -110,7 +112,28 @@ class Social_Table():
 
 
 
-    def get_changes_table(self):
+    def round_timestamps(self, deltat=None):
+        """
+        Add time column 't' rounded to the jitter time defined in the config or specified
+
+        Parameters
+        ----------
+        deltat : TYPE, time in seconds
+            time to round to. The default is concurrency_jitter from config.
+
+        Returns
+        -------
+        None.
+
+        """
+        if deltat == None:
+            deltat = str(config['concurrency_jitter']) + 's'
+
+        self.logentries['t'] = pd.DataFrame([pd.Timestamp.fromtimestamp(t) for t in self.logentries['time']],columns=['t'])['t'].dt.round(deltat)
+
+
+
+    def get_logentries_table(self):
         """
         Return the whole dataframe unabridged
 
@@ -119,7 +142,107 @@ class Social_Table():
         dataframe with columns 'id', 'time', 'name' and 'status'.
 
         """
-        return self.changes
+        return self.logentries
+
+
+
+    def calc_concurrency_for_name(self, name, force_check = False):
+        """
+        Find the
+
+        Parameters
+        ----------
+        name : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        if 'on_on' not in self.charinfo.columns:
+            self.charinfo['on_on'] = pd.NaT
+        if 'off_off' not in self.charinfo.columns:
+            self.charinfo['off_off'] = pd.NaT
+        if 'on_off' not in self.charinfo.columns:
+            self.charinfo['on_off'] = pd.NaT
+        dfname = self.logentries[self.logentries['name'] == name]
+
+        for time,ownstatus in zip(dfname['t'],dfname['status']):
+            dft = self.logentries[self.logentries['t'] == time]
+            for othername,status in zip(dft['name'],dft['status']):
+                # Make sure we populate the matrix for both chars concurrently to avoid double analysis
+                if (othername not in self.charinfo[name]['on_on'] and othername not in self.charinfo[name]['off_off'] and othername not in self.charinfo[name]['on_off']) or force_check:
+                    if ownstatus == 'online' and status == 'online':
+                        try:
+                            self.charinfo[name]['on_on'][othername] = self.charinfo[name]['on_on'][othername] + 1
+                            self.charinfo[othername]['on_on'][name] = self.charinfo[othername]['on_on'][name] + 1
+                        except:
+                            self.charinfo[name]['on_on'][othername] = 1
+                            self.charinfo[othername]['on_on'][name] = 1
+
+                    elif ownstatus == 'offline' and status == 'offline':
+                        try:
+                            self.charinfo[name]['off_off'][othername] = self.charinfo[name]['off_off'][othername] + 1
+                            self.charinfo[othername]['off_off'][name] = self.charinfo[othername]['off_off'][name] + 1
+                        except:
+                            self.charinfo[name]['off_off'][othername] = 1
+                            self.charinfo[othername]['off_off'][name] = 1
+                    else:
+                        try:
+                            self.charinfo[name]['on_off'][othername] = self.charinfo[name]['on_off'][othername] + 1
+                            self.charinfo[othername]['on_off'][name] = self.charinfo[othername]['on_off'][name] + 1
+                        except:
+                            self.charinfo[name]['on_off'][othername] = 1
+                            self.charinfo[othername]['on_off'][name] = 1
+
+
+
+    def get_concurrent_status_change(self, name, change, limit=None):
+        """
+        Get the number of one concurrent status change of the given name wrt
+        to all other chars
+
+        Parameters
+        ----------
+        name : string
+            Name of the character to query
+        change : string
+            'on_on', 'off_off', 'on_off'
+        limit : int, optional
+            Number of entries to return, highest first. The default is None.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        return self.charinfo[name][change]
+
+
+
+    def get_concurrent_status_changes(self, name, limit=None):
+        """
+        Get the number concurrent status changes (all types) of the given
+        name wrt to all other chars
+
+        Parameters
+        ----------
+        name : string
+            Name of the character to query
+        limit : int, optional
+            Number of entries to return, highest first. The default is None.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        return (self.get_concurrent_status_change(name, 'on_on', limit),
+                self.get_concurrent_status_change(name, 'off_off', limit),
+                self.get_concurrent_status_change(name, 'on_off', limit))
 
 
 
@@ -146,7 +269,7 @@ class Social_Table():
 
         """
         name_list = self.SAPI.get_name_list()
-        self.charinfo = pd.DataFrame([], index=name_list, columns=['num_entries', 'char'])
+        self.charinfo = pd.DataFrame([], index=name_list, columns=['num_entries'])
 
 
     def api_download_changes_by_name(self, name):
@@ -169,24 +292,15 @@ class Social_Table():
         df = pd.DataFrame(name_data)
         df.rename(columns={"created_at": "time"}, inplace = True)
         try:
-            self.changes = pd.concat([self.changes, df])
+            self.logentries = pd.concat([self.logentries, df])
         except:
             print("Cannot merge data for ", name)
             self.charinfo['num_entries'][name] = 0
             print(df)
 
         self.charinfo['num_entries'][name]  = len(name_data)
-        # Currently the Character class is not needed or used. Disabled to save memory
-        # try:
-        #     self.charinfo['char'][name] = Character(name, df[['time','status']])
-        #     print("Added ",name," to character list.")
-        # except KeyError as e:
-        #     print("Error adding char data for ", name)
-        #     print(e)
-        #     print(df)
-        # except:
-        #     print("Unknown error for ", name)
-        #     print(df)
+
+
 
     def create_name_table(self):
         """
@@ -197,10 +311,10 @@ class Social_Table():
         None.
 
         """
-        self.changes.drop_duplicates(ignore_index=True, inplace=True)
+        self.logentries.drop_duplicates(ignore_index=True, inplace=True)
         # df = pd.DataFrame(columns=['name','num_entries'])
         frames = dict()
-        frames = {name: len(self.changes[self.changes['name'].where(self.changes['name'] == name).notna()].index) for name in set(self.changes['name'])}
+        frames = {name: len(self.logentries[self.logentries['name'].where(self.logentries['name'] == name).notna()].index) for name in set(self.logentries['name'])}
         print(frames)
         self.charinfo = pd.DataFrame.from_dict(frames, orient='index', columns=['num_entries'])
 
@@ -227,7 +341,7 @@ class Social_Table():
         names = list(self.charinfo.loc[(self.charinfo['num_entries'] >= min_datapoints)].index)
 
         for name in names:
-            df = self.changes.loc[(self.changes['name'] == name)][['time','status']]
+            df = self.logentries.loc[(self.logentries['name'] == name)][['time','status']]
             try:
                 df['status'].replace({'online':1, 'offline':0, '':pd.NA}, inplace=True)
                 df.rename(columns={'status': name}, inplace = True)
@@ -294,6 +408,7 @@ class Social_Table():
                 self.api_download_changes_by_name(name)
         else:
             print("Unsupported type for 'names': ", type(names))
+        self.time_log_array = list(self.logentries['time'].unique())
 
 
 
