@@ -23,197 +23,113 @@ with socialgraph; if not, write to the Free Software Foundation, Inc.,
 
 import math
 import pandas as pd
+import warnings
 import matplotlib.pyplot as plt
 import requests
 import ast
 
-from datetime import datetime
+import datetime
 
 from social_globals import seconds_per_day, seconds_per_week
 from social_config import config
+from social_types import Civ, Cult, GuildRank, Organisation, Language
+from social_timeline import Timeline
 
 class Character:
     """
     Contains the data about one character and low-level access
     """
 
-    def __init__(self, name, rawdata):
-        self.name = name
-        self.rawlog = rawdata.set_index('time')
-        self.data = pd.DataFrame(data = None)
-        self.data24h = pd.DataFrame(data = None)
-        self.data7d = pd.DataFrame(data = None)
-        self.twink = pd.DataFrame(data = None)
-
-    def create_uniform_base(self,
-                            time_resolution = config['concurrency_jitter'],
-                            min_time = config['timeframe']['minimum'],
-                            max_time = config['timeframe']['maximum']):
-
-        tmin = max([min(self.rawlog.index), min_time])
-        tmax = min([max(self.rawlog.index), max_time])
-        timebase = [t for t in range(tmin, tmax, time_resolution)]
-        self.data = self.rawlog.reindex(timebase, method='ffill')
-        self.data.index = datetime.fromtimestamp(self.data.index) # TODO: add tz=CE(S)T // local time zone
-        self.data['status'].replace({'online':1, 'offline':0, '':pd.NA})
-        self.data["strg_date"]    = [datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S') for t in self.data["time"]]
-        self.data["strg_weekday"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
-        self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
+    def __init__(self, name):
+        self.vars = {
+            'name': name,
+            'guild': None,
+            'guildrank': GuildRank.UNKNOWN,
+            'civ': Civ.UNKNOWN,
+            'language': Language.UNKNOWN,
+            'organisation': Organisation.UNKNOWN,
+            'cult': Cult.UNKNOWN,
+            'twinks': None,
+            'timelines': dict(),
+            'first_seen': None,
+            'last_seen': None,
+            'num_entries': None,
+        }
+        self.inferred = dict()
 
 
-    def get_raw(self):
-        return self.rawlog
-
-    def get_data(self):
-        return self.data
-
+    def get(self, prop):
+        return self.vars[prop]
+    
     def get_name(self):
-        return self.name
+        return self.get('name')
+    
+    def get_guild(self):
+        return self.get('guild')
+    
+    def get_guildrank(self):
+        return self.get('guildrank')
+    
+    def get_civ(self):
+        return self.get('civ')
+    
+    def get_language(self):
+        return self.get('language')
+    
+    def get_organisation(self):
+        return self.get('organisation')
+    
+    def get_cult(self):
+        return self.get('cult')
+    
+    def get_twinks(self):
+        return self.get('twinks')
+    
+    def get_first_seen(self):
+        return self.get('first_seen')
+    
+    def get_last_seen(self):
+        return self.get('last_seen')
 
-    def fold(self, timebase_name, duration, df):
-        if self.data == None:
-            self.create_uniform_base()
-
-        self.data[timebase_name] = self.index % duration
-        df = pd.DataFrame()
-        df['time'] = self.data[timebase_name]
-        df['status'] = self.data['status']
-
-    def fold_24hours(self):
-        """
-        Creates a 24-hour foleded status view for a person
-        It requires the presence of a uniform (time) base which
-        will be created, if not present. Default temporal spacing is 1s.
-
-        Returns
-        -------
-        None.
-        Creates:
-            self.data24h["time"]          # array of time covering 24h
-            self.data24h["status"]        # array of status covering 24h (cumulative)
-            self.data24h["days"]          # array of number of days stacked for status
-        """
-        self.fold("time24h", seconds_per_day, self.data24h)
-        # self.data["time24hf"] = self.data["time24h"] / 3600
-        # self.data["strg_time"]    = [datetime.fromtimestamp(t).strftime('%H:%M:%S') for t in self.data["time"]]
-
-    def fold_weekly(self):
-        """
-        Creates a weekly foleded status view for a person
-        It requires the presence of a uniform (time) base which
-        will be created, if not present. Default temporal spacing is 1s.
-
-        Returns
-        -------
-        None.
-        Creates:
-            self.data7d["time"]          # array of time covering 24h
-            self.data7d["status"]        # array of status covering 24h (cumulative)
-            self.data7d["days"]          # array of number of days stacked for status
-        """
-        self.fold("time7d", seconds_per_week, self.data7d)
-        self.data["time7df"] = self.data["time7d"] / 3600 / 24
-        # self.data["strg_time"] = [datetime.fromtimestamp(t).strftime('%a %H:%M:%S') for t in self.data["time"]]
-
-
-    def create_time_strings(self):
-        """
-        Creates human-readable timestamps from the unix timestamps (column 'time')
-
-        Returns
-        -------
-        None.
-
-        """
-        self.data["timestrg"] = datetime.fromtimestamp(self.data["time"]).strftime('%Y-%m-%d %H:%M:%S')
-
-    def get_time_for_status(self, status, tmin=config["timeframe"]["minimum"], tmax=config["timeframe"]["maximum"]):
-        """
-        Parameters
-        ----------
-        status : string
-            online status to search for.
-        tmin : long int, optional
-            minimum time to consider. The default is config["timeframe"]["minimum"].
-        tmax : long int, optional
-            maximum time to consider. The default is config["timeframe"]["maximum"].
-
-        Returns
-        -------
-        status_timestamps : list of long int
-            list of timestamps which match the status change
-
-        """
-        status_timestamps = []
-        return status_timestamps
-
-
-    def plot_online(self, tmin=0, tmax=config["timeframe"]["maximum"]):
-        fig, ax = plt.subplots()
-        ax.step(self.rawlog.index, self.rawlog["status"], linewidth=2.5)
-        # ax.set(xlim=(config["timeframe"]["minimum"], config["timeframe"]["maximum"]))
-        plt.show()
-
-    def plot_folded(self, col_time_float, n_bins, col_data, **kwargs):
-        """
-
-        Parameters
-        ----------
-        col_time_float : str
-            column name for the folded time (floating numbers).
-        n_bins : int
-            Number bins to use in the histogram
-        col_data : TYPE
-            Data columns to show foleded over the period.
-
-        Returns
-        -------
-        None.
-
-        """
+    def get_num_entries(self):
+        return self.get('num_entries')
+    
+    
+    def update_timeline(self, timeline):
         try:
-            self.data.hist(col_time_float, bins=n_bins, weights=self.data[col_data])
-        except KeyError as e:
-            print("Columns not found: ")
-            print(e)
+            name = timeline['name']
+            data = timeline['data']
+        except KeyError:
+            print("Trying to create timeline from df without name and data columns")
             return
-
-        try:
-            if 'title' in kwargs:
-                plt.title(kwargs['title'])
-            if 'xtitle' in kwargs:
-                plt.xtitle(kwargs['xtitle'])
-            if 'ytitle' in kwargs:
-                plt.ytitle(kwargs['ytitle'])
-        except (KeyError, NameError):
-            print("Invalid argument")
-            return
-
-
-    def plot_24h(self):
-        """
-        Plot the average online status over a 24h period
-
-        Returns
-        -------
-        None.
-
-        """
-        if not "time24hf" in self.data:
-            self.fold_24hours()
-
-        self.plot_folded("time24hf", 24*60 / 2, "status") # 2-minute bins
-
-    def plot_week(self):
-        """
-        Plot the average online status folder over weekly
-
-        Returns
-        -------
-        None.
-
-        """
-        if not "time7df" in self.data:
-            self.fold_weekly()
-
-        self.plot_folded("time7df", 7*8, "status") # 3-hour bins
+        
+        self.vars['timelines'][name] = Timeline(dataframe=data)
+        
+        
+    
+    def set(self, prop, value, force=False):
+        if not self.vars[prop]:
+            warnings.warn("Warning: Adding new property '{}' to char {}!", prop, self.prop['name']['value'])
+        else:
+            if type(self.vars[prop]) is list:
+                if not force:
+                    warnings.warn("Trying to set list property '{}' for char {}. Skipping", prop, self.vars['name'])
+                    return
+                else:
+                    if type(value) is not list:
+                        warnings.warn("Warning: Overwriting list value for property '{}' with non-list value for char {}", prop, self.vars['name'])
+        
+        self.vars[prop] = {'value': value, 'auto': False}
+            
+        
+    def add(self, prop, value):
+        self.vars[prop]['value'].append(value)
+        
+            
+    def __str__(self):
+        str = ""
+        str += "Character '{}' is {} in guild '{}'".format(self.vars['name'], self.vars['guildrank'], self.vars['guild'])
+        str += "\nCiv: {}, Org: {}, Cult: {}".format(self.vars['civ'], self.vars['organisation'], self.vars['cult'])
+        str += "\nLanguage: {}, first seen: {}, last seen: {} ({} times)".format(self.vars['language'], self.vars['first_seen'], self.vars['last_seen'], self.vars['num_entries'])
+        return str
+    

@@ -47,3 +47,9 @@ def similar(value1, value2, delta=config["concurrency_jitter"], direction=0):
     minv = -delta if direction != -1 else 0
     maxv = delta if direction != 1 else 0
     return minv < value1 - value2 < maxv
+
+# TODO:
+
+# convert timestamp to timedate
+# convert timedate to timestamp
+# 

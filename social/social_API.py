@@ -7,12 +7,25 @@ Created on Wed May 25 20:48:03 2022
 """
 
 import requests
+import pandas as pd
 import ast
 try:
     from social_config import config
 except:
     print("Config not found! Using defaults. Access may fail.")
     pass
+
+
+
+
+def to_numeric_status(string_status):
+    if string_status in config['status']:
+        return config['status'].get(string_status)
+                                    
+    return pd.NA
+
+
+
 
 class Social_API:
     """
@@ -125,4 +138,78 @@ class Social_API:
         """
         url = self.url_config['base'] + self.url_config['name_status_change'] + name
         return self.get(url)
+    
+    def get_raw_timeline_by_name(self, name):
+        """
 
+        Parameters
+        ----------
+        name : string
+            The name to get the status changes for.
+
+        Returns
+        -------
+        dataframe with column 'time' and 'status'.
+
+        """
+        raw = pd.json_normalize(self.get_status_change_by_name(name))
+        return raw[['created_at', 'status']]
+        
+        
+    
+    def get_guild_by_name(self, name):
+        raise NotImplementedError(self.get_guild_by_name.__name__ + ": Not yet implemented")
+    
+    def get_cult_by_name(self, name):
+        raise NotImplementedError(self.get_cult_by_name.__name__ + ": Not yet implemented")
+    
+    def get_organisation_by_name(self, name):
+        raise NotImplementedError(self.get_organisation_by_name.__name__ + ": Not yet implemented")
+    
+    def get_notes_by_name(self, name):
+        raise NotImplementedError(self.get_notes_by_name.__name__ + ": Not yet implemented")
+
+    
+    def add_note_by_name(self, name, note):
+        raise NotImplementedError(self.add_note_by_name.__name__ + ": Not yet implemented")
+    
+    def set_cult_by_name(self, name, faction):
+        raise NotImplementedError(self.set_cult_by_name.__name__ + ": Not yet implemented")
+    
+    def set_organisation_by_name(self, name, faction):
+        raise NotImplementedError(self.set_organisation_by_name.__name__ + ": Not yet implemented")
+    
+    def set_guild_by_name(self, name, guild):
+        raise NotImplementedError(self.set_guild_by_name.__name__ + ": Not yet implemented")
+
+    def get_race_by_name(self, name):
+        raise NotImplementedError(self.get_race_by_name.__name__ + ": Not yet implemented")
+    
+    def get_guildrank_by_name(self, name):
+        raise NotImplementedError(self.get_guildrank_by_name.__name__ + ": Not yet implemented")
+    
+    def get_language_by_name(self, name):
+        raise NotImplementedError(self.get_language_by_name.__name__ + ": Not yet implemented")
+    
+    def get_char_info_by_name(self, name):
+        """
+        Parameters
+        ----------
+        name : TYPE
+            DESCRIPTION.
+
+        Returns
+            dict of charinfo:
+                name: string
+                race: string
+                organisation: string
+                cult: string
+                guild: string
+                guildrank: string
+                language: string
+        -------
+        None.
+
+        """
+        pass
+    
