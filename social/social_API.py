@@ -139,7 +139,7 @@ class Social_API:
         url = self.url_config['base'] + self.url_config['name_status_change'] + name
         return self.get(url)
     
-    def get_raw_timeline_by_name(self, name):
+    def get_raw_dataframe_by_name(self, name):
         """
 
         Parameters

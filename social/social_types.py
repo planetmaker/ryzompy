@@ -64,3 +64,19 @@ class Language(Enum):
     FR      = 4
     RU      = 5
     
+    
+class Timebase(str, Enum):
+    ORIGINAL = 'original'        # sparse as the raw data
+    DELTA_120S = 't120s'         # resampled to 2 minutes cadences
+    LIMIT_12M  = '12months'
+    
+    
+class TimelineColumnType(str, Enum):
+    RAW      = 'created_at'
+    TIME     = 'time'
+    STATUS   = 'status'
+    WEEKLY   = 'weekly'
+    DAILY    = 'daily'
+    YEARLY   = 'yearly'
+    
+    

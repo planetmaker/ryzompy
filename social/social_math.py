@@ -53,3 +53,28 @@ def similar(value1, value2, delta=config["concurrency_jitter"], direction=0):
 # convert timestamp to timedate
 # convert timedate to timestamp
 # 
+
+def crosscorrelate(df1, df2, col_t, col_val):
+    """
+    Return autocorrelation between the two dataframes df1, df2.
+
+    Parameters
+    ----------
+    df1 : dataframe
+        dataframe from char 1
+    df2 : dataframe
+        dataframe from char 2
+    col_t: string
+        the name of the column which represents time
+    col_val:
+        the name of the column which represents the value
+
+    Returns
+    -------
+    corr : float
+        the cross-correlation between the two dataframes
+
+    """
+    raise NotImplementedError()
+    corr = 0
+    return corr

@@ -8,12 +8,19 @@ Created on Fri May 27 15:30:20 2022
 
 import pandas as pd
 import datetime
-import matplotlib.pyplot as plt
 
 global config
+
 from social_API import Social_API
-from social_config import config
 from character import Character
+from social_types import Timebase
+
+try:
+    from social_config import config
+except:
+    pass
+
+
 
 class Social_Table():
     """
@@ -43,6 +50,31 @@ class Social_Table():
             print("Trying to read data from pickle...")
             self.read_pickle()
 
+
+    def help():
+        """
+        Print some help on usage
+
+        Returns
+        -------
+        None.
+
+        """
+        print("""
+              Social table basically does the framework:
+                  - store a list of characters
+                  - give access to the social API database
+                  - save or load the information to file
+                  
+              read_pickle(self, filename): read from file
+              save_pickle(self, filename): save to file
+              get_name_table: get the list of names. 
+                  Returns a dataframe with the name as index and a character object in the column 'char'
+              api_download_name_list()
+                  Initialize the characterlist with all available names. No time data yet.
+              api_download_Timeline_by_name
+                  Download the raw time data from the API and add it as Timeline to the character
+              """)
 
 
     def read_pickle(self, filenames=None):
@@ -101,6 +133,24 @@ class Social_Table():
 
         """
         return self.charinfo
+    
+    
+    
+    def get_char(self, name):
+        """
+        Return one character
+
+        Parameters
+        ----------
+        name : string
+            The name of the character to access
+            
+        Returns
+        -------
+        One character
+
+        """
+        return self.charinfo['char'][name]
 
 
 
@@ -136,7 +186,7 @@ class Social_Table():
 
         """
         try:
-            raw = self.SAPI.get_raw_timeline_by_name(name)
+            raw = self.SAPI.get_raw_dataframe_by_name(name)
         except:
             print("Download failed for " + name)
             return
@@ -144,7 +194,7 @@ class Social_Table():
         if not 'char' in self.charinfo:
             self.charinfo['char'] = None
             
-        self.charinfo['char'][name].update_timeline({ 'name': 'tl_raw', 'data': raw})
+        self.charinfo['char'][name].set_timeline_from_df(Timebase.ORIGINAL, raw)
 
 
 
@@ -168,3 +218,29 @@ class Social_Table():
 
 
 
+    def add_crosscorrelation(self, char1, char2, timeline, col_time, col_val,result_col_name):
+        """
+        Add the cross-correlation value for the chars1 and char2 for the values in col_val,
+        at times col_time in timeline. Store the results in result_col_name in the characters
+
+        Parameters
+        ----------
+        char1 : TYPE
+            DESCRIPTION.
+        char2 : TYPE
+            DESCRIPTION.
+        timeline : TYPE
+            DESCRIPTION.
+        col_time : TYPE
+            DESCRIPTION.
+        col_val : TYPE
+            DESCRIPTION.
+        result_col_name : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        

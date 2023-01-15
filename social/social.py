@@ -29,6 +29,7 @@ global config
 from social_config import config
 from social_table import Social_Table
 from character import Character
+from social_types import Timebase, TimelineColumnType
 
 """
 The logfile 'example.log' is expected to be a csv file in the following format:
@@ -152,11 +153,19 @@ if __name__ == '__main__':
     print(config)
 
     # raw_status = read_status(config["status_filename"])
-    st = Social_Table(from_API=False)
+    st = Social_Table(from_API=True)
     
+    # Populate table with all names
     st.api_download_name_list()
 
-    st.api_download_Timeline_by_name('aaylejah')
+    # First get an overview over selected interesting chars
+    for name in config['interesting_chars']:
+        print(name + ':')
+        st.api_download_Timeline_by_name(name)
+        print(st.get_char(name).get_num_entries())
+        # st.get_char(name).
+        
+    ch = st.get_char(config['interesting_chars'][0]) 
 
     # names = set(config['known_distinct']).union(set(config['vino_chars']), set(config['known_leaders']))
     # for item in config['known_twinks']:
