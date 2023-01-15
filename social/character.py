@@ -54,6 +54,7 @@ class Character:
             'first_seen': None,
             'last_seen': None,
             'num_entries': None,
+            'correlations': dict(),
         }
         self.inferred = dict()
 
@@ -94,36 +95,35 @@ class Character:
     def get_num_entries(self):
         return self.get('num_entries')
     
-    
-    def update_timeline(self, timeline):
-        try:
-            name = timeline['name']
-            data = timeline['data']
-        except KeyError:
-            print("Trying to create timeline from df without name and data columns")
+    def set_property(self, prop, value, force=False):
+        if prop not in self.vars:
+            warnings.warn("Adding new property '{}' to char {}!".format(prop, self.vars['name']))
+            self.vars[prop] = value
             return
-        
-        self.vars['timelines'][name] = Timeline(dataframe=data)
-        
+
+        if type(self.vars[prop]) in [dict, list]:
+            if not force:
+                warnings.warn("Trying to set list or dict property '{}' for char {}. Skipping".format(prop, self.vars['name']))
+                return
+            else:
+                warnings.warn("Overwriting list- or dict-type property {} for char {}".format(prop, self.vars['name']))
+            
+        if type(value) is not type(self.vars[prop]) and self.vars[prop] is not None:
+            if not force:
+                warnings.warn("Trying to change property type for '{}' for char {}. Skipping".format(prop, self.vars['name']))
+                return
+            else:
+                warnings.warn("Changing property type for '{}' for char {}.".format(prop, self.vars['name']))
+            
+        self.vars[prop] = value
+    
+    def set_timeline_from_df(self, name, df):
+       self.vars['timelines'][name] = Timeline(dataframe=df)
+       
         
     
-    def set(self, prop, value, force=False):
-        if not self.vars[prop]:
-            warnings.warn("Warning: Adding new property '{}' to char {}!", prop, self.prop['name']['value'])
-        else:
-            if type(self.vars[prop]) is list:
-                if not force:
-                    warnings.warn("Trying to set list property '{}' for char {}. Skipping", prop, self.vars['name'])
-                    return
-                else:
-                    if type(value) is not list:
-                        warnings.warn("Warning: Overwriting list value for property '{}' with non-list value for char {}", prop, self.vars['name'])
-        
-        self.vars[prop] = {'value': value, 'auto': False}
-            
-        
-    def add(self, prop, value):
-        self.vars[prop]['value'].append(value)
+    def amend__timeline(self, timeline_name, timeline):
+        self.vars['timelines'][timeline_name]
         
             
     def __str__(self):

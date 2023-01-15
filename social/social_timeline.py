@@ -57,11 +57,11 @@ class Timeline:
         The timeline limited to times within the interval [mint,maxt]
 
         """
-        raise NotImplementedError()
-        return self.df
-
-
-
+        mask = (self.df[TimelineColumnType.TIME] > mint) & (self.df[TimelineColumnType.TIME] < maxt)
+        return self.df.loc[mask]
+    
+    
+        
     def get_time_resampled(self, delta_t = 120):
         """
 
@@ -76,8 +76,9 @@ class Timeline:
         Resampled timeline
 
         """
-        newdf = self.df.resample()
+        newdf = self.df.resample(Timedelta, )
         return newdf
+    
     
             
     def add_time_from_raw(self):

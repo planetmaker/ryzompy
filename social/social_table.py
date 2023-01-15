@@ -195,6 +195,7 @@ class Social_Table():
             self.charinfo['char'] = None
             
         self.charinfo['char'][name].set_timeline_from_df(Timebase.ORIGINAL, raw)
+        self.charinfo['char'][name].set_property('num_entries', raw.size)
 
 
 
