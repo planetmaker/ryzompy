@@ -58,7 +58,7 @@ class Timeline:
 
         """
         mask = (self.df[TimelineColumnType.TIME] > mint) & (self.df[TimelineColumnType.TIME] < maxt)
-        return self.df.loc[mask]
+        return Timeline(dataframe=self.df.loc[mask])
     
     
         
@@ -76,7 +76,7 @@ class Timeline:
         Resampled timeline
 
         """
-        newdf = self.df.resample(Timedelta, )
+        newdf = self.df.resample(Timedelta)
         return newdf
     
     

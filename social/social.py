@@ -30,6 +30,7 @@ from social_config import config
 from social_table import Social_Table
 from character import Character
 from social_types import Timebase, TimelineColumnType
+from matplotlib import pyplot as plt
 
 """
 The logfile 'example.log' is expected to be a csv file in the following format:
@@ -163,9 +164,35 @@ if __name__ == '__main__':
         print(name + ':')
         st.api_download_Timeline_by_name(name)
         print(st.get_char(name).get_num_entries())
-        # st.get_char(name).
+        ch = st.get_char(name)
+        tl = ch.get('timelines')[Timebase.ORIGINAL]
+        
+        # add the raw data
+        tl.add_time_from_raw()
+        
+        # Add numeric status
+        df = tl.get_dataframe()
+        df['num_status'] = pd.NA
+        df.loc[df['status'].str.contains("off"), 'num_status'] = 0
+        df.loc[df['status'].str.contains("on"), 'num_status'] = 1
+        
+        # make time the new index
+        df.set_index(TimelineColumnType.TIME, drop=False, inplace=True)
+        
+        # create a 2-minute time series
+        ch.set_timeline_from_df(Timebase.DELTA_120S, df.resample('120S').bfill())
+        tl120s = ch.get('timelines')[Timebase.DELTA_120S]
+        df120s = tl120s.get_dataframe()
+        df120s['hourly'] = df120s[TimelineColumnType.TIME].dt.hour
+        df120s['weekly'] = df120s.index.weekday*24+df120s['hourly']
+        
+        df120s['weekly'].plot(bins=7*24, kind='hist', title=name, figure=plt.figure())
+        
         
     ch = st.get_char(config['interesting_chars'][0]) 
+    tl = ch.get('timelines')[Timebase.ORIGINAL]
+    tl120s = ch.get('timelines')[Timebase.DELTA_120S]
+    df120s = tl120s.get_dataframe()
 
     # names = set(config['known_distinct']).union(set(config['vino_chars']), set(config['known_leaders']))
     # for item in config['known_twinks']:
