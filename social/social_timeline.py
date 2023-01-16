@@ -76,6 +76,7 @@ class Timeline:
         Resampled timeline
 
         """
+        Timedelta = delta_t
         newdf = self.df.resample(Timedelta)
         return newdf
     

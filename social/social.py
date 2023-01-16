@@ -23,14 +23,14 @@ with socialgraph; if not, write to the Free Software Foundation, Inc.,
 
 import pandas as pd
 import numpy as np
-import datetime
+from datetime import datetime
+from matplotlib import pyplot as plt
 
 global config
 from social_config import config
 from social_table import Social_Table
 from character import Character
 from social_types import Timebase, TimelineColumnType
-from matplotlib import pyplot as plt
 
 """
 The logfile 'example.log' is expected to be a csv file in the following format:
@@ -180,19 +180,40 @@ if __name__ == '__main__':
         df.set_index(TimelineColumnType.TIME, drop=False, inplace=True)
         
         # create a 2-minute time series
-        ch.set_timeline_from_df(Timebase.DELTA_120S, df.resample('120S').bfill())
+        ch.set_timeline_from_df(Timebase.DELTA_120S, df.resample('120S').ffill())
         tl120s = ch.get('timelines')[Timebase.DELTA_120S]
         df120s = tl120s.get_dataframe()
-        df120s['hourly'] = df120s[TimelineColumnType.TIME].dt.hour
-        df120s['weekly'] = df120s.index.weekday*24+df120s['hourly']
+        df120s['hour'] = df120s[TimelineColumnType.TIME].dt.hour
+        df120s['weekday'] = df120s.index.weekday*24+df120s['hour']
+        df120s['week'] = df120s.index.isocalendar().week
+        df120s['dayofyear'] = df120s.index.dayofyear
         
-        df120s['weekly'].plot(bins=7*24, kind='hist', title=name, figure=plt.figure())
+        # Create dataset with data only from 2022
+        ch.add_timeline('year2022',tl120s.get_time_limited(
+            datetime.strptime('2022-01-01 00:00:00', '%Y-%m-%d %H:%M:%S'), 
+            datetime.strptime('2022-12-31 23:59:59', '%Y-%m-%d %H:%M:%S')
+            )
+            )
+
+        # plot data folded by week
+        ax = df120s['weekday'].plot(bins=7*24, kind='hist', title=name.capitalize(), figure=plt.figure(), xticks=[0,24,48,72,96,120,144,168])
+        ax.figure.savefig('onlinetime_hourly2022_' + name + '.png')
+
+        # plot some statistics for 2022
+        df2022 = (ch.get('timelines')['year2022']).get_dataframe()
+        ax = df2022[['num_status','dayofyear']].groupby(['dayofyear']).sum().plot(title=name.capitalize(),ylabel='daily online time', kind='bar')
+        ax.figure.savefig('onlinetime_daily2022_' + name + '.png')
+        ax = df2022[['num_status','week']].groupby(['week']).sum().plot(title=name.capitalize(),ylabel='weekly online time',kind='bar')
+        ax.figure.savefig('onlinetime_weekly2022_' + name + '.png')
+
+        # df2022['num_status'].dropna().plot(kind='hist',bins=365, title=name.capitalize(), figure=plt.figure())
         
         
     ch = st.get_char(config['interesting_chars'][0]) 
     tl = ch.get('timelines')[Timebase.ORIGINAL]
     tl120s = ch.get('timelines')[Timebase.DELTA_120S]
     df120s = tl120s.get_dataframe()
+    df2022 = ch.get('timelines')['year2022'].get_dataframe()
 
     # names = set(config['known_distinct']).union(set(config['vino_chars']), set(config['known_leaders']))
     # for item in config['known_twinks']:
