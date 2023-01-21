@@ -23,6 +23,7 @@ with socialgraph; if not, write to the Free Software Foundation, Inc.,
 
 import pandas as pd
 import numpy as np
+import warnings
 from datetime import datetime
 from matplotlib import pyplot as plt
 
@@ -140,12 +141,50 @@ def convert_raw(raw):
 
     return characters
 
-# def plot_change_offsets():
-#     cl = st.get_changes_table()
-#     times = list(cl['time'])
-#     times.sort()
-#     dtimes = [x - times[i-1] for i, x in enumerate(times)][1:]
-#     n, bins, patches = plt.hist(x=dtimes, bins=bins, color='#0504aa', alpha=0.7, rwidth=0.85)
+
+
+def has_known_twink(name):
+    """
+    Returns True when the name is in the list of known twinks as defined
+    in the config file
+
+    Parameters
+    ----------
+    name : string
+        name of the character to check
+
+    Returns
+    -------
+    bool
+        Whether the character has twinks.
+
+    """
+    for item in config['known_twinks']:
+        if name in item:
+            return True
+    return False
+
+
+def get_known_twinks(name):
+    """
+    Return the set of known twinks as defined in the config file
+
+    Parameters
+    ----------
+    name : string
+        The name of the char to return the twinks for
+
+    Returns
+    -------
+    Set of twink names.
+
+    """
+    for item in config['known twinks']:
+        if name in item:
+            return item
+    return set()
+    
+
 
 
 if __name__ == '__main__':
@@ -154,16 +193,26 @@ if __name__ == '__main__':
     print(config)
 
     # raw_status = read_status(config["status_filename"])
-    st = Social_Table(from_API=True)
+    st = Social_Table(from_API=config["reinit_from_API"])
     
     # Populate table with all names
     st.api_download_name_list()
 
     # First get an overview over selected interesting chars
-    for name in config['interesting_chars']:
+    
+    char_set = set(config['interesting_chars'])
+    for twinkset in config['known_twinks']:
+        char_set = char_set.union(twinkset)
+    char_set = char_set.union(set(config['known_distinct']))
+    
+    for name in char_set:
         print(name + ':')
-        st.api_download_Timeline_by_name(name)
-        print(st.get_char(name).get_num_entries())
+        try:
+            st.api_download_Timeline_by_name(name)
+            print(st.get_char(name).get_num_entries())
+        except KeyError:
+            warnings.warn(name + ' not found in character database')
+            continue
         ch = st.get_char(name)
         tl = ch.get('timelines')[Timebase.ORIGINAL]
         
@@ -177,14 +226,19 @@ if __name__ == '__main__':
         df.loc[df['status'].str.contains("on"), 'num_status'] = 1
         
         # make time the new index
+        # TODO: ValueError: cannot reindex a non-unique index with a method or limit
         df.set_index(TimelineColumnType.TIME, drop=False, inplace=True)
         
         # create a 2-minute time series
-        ch.set_timeline_from_df(Timebase.DELTA_120S, df.resample('120S').ffill())
+        try:
+            ch.set_timeline_from_df(Timebase.DELTA_120S, df.resample('120S').ffill())
+        except ValueError:
+            warnings.warn(name + ': Non-unique index. Skipping.')
+            continue
         tl120s = ch.get('timelines')[Timebase.DELTA_120S]
         df120s = tl120s.get_dataframe()
         df120s['hour'] = df120s[TimelineColumnType.TIME].dt.hour
-        df120s['weekday'] = df120s.index.weekday*24+df120s['hour']
+        df120s['weekday_hour'] = df120s.index.weekday*24+df120s['hour']
         df120s['week'] = df120s.index.isocalendar().week
         df120s['dayofyear'] = df120s.index.dayofyear
         
@@ -196,15 +250,23 @@ if __name__ == '__main__':
             )
 
         # plot data folded by week
-        ax = df120s['weekday'].plot(bins=7*24, kind='hist', title=name.capitalize(), figure=plt.figure(), xticks=[0,24,48,72,96,120,144,168])
-        ax.figure.savefig('onlinetime_hourly2022_' + name + '.png')
+        ch.add_timeline('online_weekfold_hourly', df120s[['num_status','weekday_hour']].groupby(['weekday_hour']).sum())
+        ax = df120s['weekday_hour'].plot(bins=7*24, kind='hist', title=name.capitalize(), figure=plt.figure(), xticks=[0,24,48,72,96,120,144,168])
+        ax.figure.savefig(config['paths']['plots'] + 'onlinetime_hourly_' + name + '.png')
 
         # plot some statistics for 2022
         df2022 = (ch.get('timelines')['year2022']).get_dataframe()
+        
+#        hist = df2022[['num_status','dayofyear']].groupy(['dayofyear']).sum()
+#        ch.add_timeline('online_by_dayofyear2022', hist)
+#        ch.add_timeline('online_by_dayofyear2022', df2022[['num_status','dayofyear']].groupy(['dayofyear']).sum())
         ax = df2022[['num_status','dayofyear']].groupby(['dayofyear']).sum().plot(title=name.capitalize(),ylabel='daily online time', kind='bar')
-        ax.figure.savefig('onlinetime_daily2022_' + name + '.png')
+        ax.figure.savefig(config['paths']['plots'] + 'onlinetime_dayofyear2022_' + name + '.png')
+        
+ #       ch.add_timeline('online_by_week', df2022[['num_status','week']].groupby(['week']).sum())
         ax = df2022[['num_status','week']].groupby(['week']).sum().plot(title=name.capitalize(),ylabel='weekly online time',kind='bar')
-        ax.figure.savefig('onlinetime_weekly2022_' + name + '.png')
+        ax.figure.savefig(config['paths']['plots'] + 'onlinetime_weekly2022_' + name + '.png')
+
 
         # df2022['num_status'].dropna().plot(kind='hist',bins=365, title=name.capitalize(), figure=plt.figure())
         

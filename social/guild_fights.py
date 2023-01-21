@@ -65,7 +65,7 @@ id,op,op_owner,op_owner_id,date,customer,customer_guild,attacking_guild,war_type
 
 def guild_fights():
     try:
-        fightlog = pd.read_csv(config['path'] + config['fightlog_filename'])
+        fightlog = pd.read_csv(config['path']['base'] + config['fightlog_filename'])
     except:
         print("Could not read fightlog file")
         return

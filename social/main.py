@@ -23,7 +23,6 @@ with socialgraph; if not, write to the Free Software Foundation, Inc.,
 
 global config
 
-from social_config import config
 from social_table import Social_Table
 
 st = Social_Table()
@@ -77,4 +76,16 @@ class Guild
     iconID: int
     
     
+"""
+
+
+"""
+Bot-Kriterien:
+    - regelmäßig online für sehr lange Zeiten
+    - 
+    
+Twink-Kreterien:
+    - gleichzeitiges ein- und ausloggen
+    - kleine Gilde / gleiche Gilde
+    - niemals gleichzeitig (gleicher Account) und kurz nacheinander bei yubohoho
 """
